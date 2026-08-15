@@ -224,8 +224,16 @@ export default function FlashcardsStudioPage() {
           </div>
         </div>
 
-        {/* Primary CTA: Start Study Mode */}
-        <div className="flex items-center gap-3">
+        {/* Action CTAs */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          <NextLink
+            href="/revision"
+            className="neo-btn-primary px-4 py-2.5 text-xs sm:text-sm flex items-center gap-2 shadow-neo-sm"
+          >
+            <RotateCw className="w-4 h-4 text-[#B8FF3D]" />
+            <span>Revise What I Learned →</span>
+          </NextLink>
+
           <button
             onClick={() => {
               setStudyMode(!studyMode);
@@ -233,7 +241,7 @@ export default function FlashcardsStudioPage() {
               setStudyRevealed(false);
             }}
             disabled={filteredCards.length === 0}
-            className="neo-btn-lime px-5 py-2.5 text-xs sm:text-sm flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="neo-btn-lime px-4 py-2.5 text-xs sm:text-sm flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Sparkles className="w-4 h-4 text-[#111218]" />
             <span>{studyMode ? 'Exit Study Mode' : 'Start Study Mode →'}</span>

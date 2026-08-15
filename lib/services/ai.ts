@@ -1754,5 +1754,107 @@ Extract the structured concepts JSON now:`;
   }));
 }
 
+// ─────────────────────────────────────────────────────────────
+// AI REVISION SESSIONS & SELECTION ENGINE
+// ─────────────────────────────────────────────────────────────
+
+export const REVISION_SCORING_WEIGHTS = {
+  WEAKNESS_MAX: 40,
+  MISTAKE_MAX: 25,
+  AGE_MAX: 20,
+  RECENCY_MAX: 15,
+  LOW_EXPOSURE_BOOST: 10,
+} as const;
+
+export interface RankedConceptCandidate {
+  concept: any;
+  priorityScore: number;
+  breakdown: {
+    weaknessScore: number;
+    mistakeScore: number;
+    ageScore: number;
+    recencyScore: number;
+    exposureScore: number;
+  };
+}
+
+/**
+ * Deterministically ranks candidate concepts for personalized revision.
+ * Formula:
+ * revision_priority = weakness_score + mistake_score + age_score + recency_score + exposure_score
+ */
+export function rankRevisionConcepts(
+  concepts: any[],
+  mode: 'smart_mix' | 'weak_only' | 'recent' = 'smart_mix'
+): RankedConceptCandidate[] {
+  const now = Date.now();
+
+  const ranked: RankedConceptCandidate[] = concepts.map((c) => {
+    const mastery = c.user_mastery?.[0] || {
+      mastery_score: 0,
+      exposure_count: 0,
+      correct_count: 0,
+      wrong_count: 0,
+      last_seen_at: c.created_at,
+    };
+
+    const score = mastery.mastery_score || 0;
+    const wrong = mastery.wrong_count || 0;
+    const exposure = mastery.exposure_count || 0;
+    const lastSeen = new Date(mastery.last_seen_at).getTime();
+    const daysSinceLastSeen = Math.max(0, (now - lastSeen) / (1000 * 60 * 60 * 24));
+
+    // 1. Weakness Score (0 - 40 pts)
+    const weaknessScore = ((100 - score) / 100) * REVISION_SCORING_WEIGHTS.WEAKNESS_MAX;
+
+    // 2. Mistake Score (0 - 25 pts)
+    const mistakeScore = Math.min(
+      REVISION_SCORING_WEIGHTS.MISTAKE_MAX,
+      wrong * 5
+    );
+
+    // 3. Age / Forgetting Curve Score (0 - 20 pts)
+    const ageScore = Math.min(
+      REVISION_SCORING_WEIGHTS.AGE_MAX,
+      daysSinceLastSeen * 2.5
+    );
+
+    // 4. Recency Score (0 - 15 pts)
+    const recencyScore = Math.max(
+      0,
+      REVISION_SCORING_WEIGHTS.RECENCY_MAX - daysSinceLastSeen * 2
+    );
+
+    // 5. Low Exposure Boost (0 - 10 pts)
+    const exposureScore =
+      exposure <= 2 ? REVISION_SCORING_WEIGHTS.LOW_EXPOSURE_BOOST : 0;
+
+    let priorityScore =
+      weaknessScore + mistakeScore + ageScore + recencyScore + exposureScore;
+
+    // Mode-specific weight adjustments
+    if (mode === 'weak_only') {
+      priorityScore = score < 50 ? 100 - score + mistakeScore * 2 : 0;
+    } else if (mode === 'recent') {
+      priorityScore = daysSinceLastSeen <= 7 ? 50 + recencyScore * 3 : 0;
+    }
+
+    return {
+      concept: c,
+      priorityScore,
+      breakdown: {
+        weaknessScore,
+        mistakeScore,
+        ageScore,
+        recencyScore,
+        exposureScore,
+      },
+    };
+  });
+
+  return ranked.sort((a, b) => b.priorityScore - a.priorityScore);
+}
+
+
 
 

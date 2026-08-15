@@ -199,6 +199,7 @@ model Concept {
   flashcards         ConceptFlashcard[]
   quiz_questions     ConceptQuizQuestion[]
   user_mastery       UserConceptMastery[]
+  revision_items     RevisionSessionItem[]
 
   @@index([category])
   @@index([name])
@@ -275,4 +276,50 @@ model UserConceptMastery {
   @@index([user_id])
   @@index([concept_id])
   @@index([mastery_score])
+}
+
+// ─────────────────────────────────────────────────────────────
+// REVISION SESSIONS & ADAPTIVE RECALL ENGINE
+// ─────────────────────────────────────────────────────────────
+
+model RevisionSession {
+  id              String                @id @default(cuid())
+  user_id         String                @default("default_user")
+  mode            String                @default("smart_mix") // 'smart_mix' | 'weak_only' | 'recent'
+  status          String                @default("in_progress") // 'in_progress' | 'completed' | 'abandoned'
+  total_items     Int                   @default(10)
+  completed_items Int                   @default(0)
+  correct_items   Int                   @default(0)
+  session_score   Int                   @default(0) // 0 - 100 accuracy
+  started_at      DateTime              @default(now())
+  completed_at    DateTime?
+  updated_at      DateTime              @default(now())
+  items           RevisionSessionItem[]
+
+  @@index([user_id])
+  @@index([status])
+}
+
+model RevisionSessionItem {
+  id                   String          @id @default(cuid())
+  session_id           String
+  session              RevisionSession @relation(fields: [session_id], references: [id], onDelete: Cascade)
+  concept_id           String?
+  concept              Concept?        @relation(fields: [concept_id], references: [id], onDelete: SetNull)
+  source_type          String          // 'quiz' | 'flashcard' | 'concept_recall'
+  source_id            String?         // quizQuestion.id or flashcard.id
+  question_text        String
+  options              String?         // JSON string array for multiple-choice: ["A", "B", "C", "D"]
+  correct_answer       String?
+  user_answer          String?
+  is_correct           Boolean?
+  explanation          String?
+  order_index          Int             @default(0)
+  source_video_title   String?
+  source_segment_title String?
+  source_start_seconds Int?
+  answered_at          DateTime?
+
+  @@index([session_id])
+  @@index([concept_id])
 }

@@ -496,7 +496,34 @@ export default function DiscoverHomePage() {
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
-          2. THREE EDITORIAL ENTRY TILES (Watch, Topic, Recall)
+          AI REVISION BANNER CTA
+      ───────────────────────────────────────────────────────────── */}
+      <section className="bg-[#FFFDF7] border-2 border-[#111218] rounded-3xl p-6 sm:p-7 shadow-neo flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2">
+            <span className="badge-lime px-2.5 py-0.5 text-xs font-bold uppercase font-display">
+              Adaptive Recall Engine
+            </span>
+          </div>
+          <h3 className="text-xl sm:text-2xl font-black font-display uppercase tracking-tight text-[#111218]">
+            Revise What You Learned
+          </h3>
+          <p className="text-xs sm:text-sm text-[#636573] font-medium max-w-xl">
+            Let Saras automatically curate candidate questions from your Knowledge Map, weak areas, and recent mistakes.
+          </p>
+        </div>
+
+        <NextLink
+          href="/revision"
+          className="neo-btn-primary px-6 py-3 text-xs sm:text-sm font-bold font-display uppercase flex items-center justify-center gap-2 shadow-neo-sm hover:shadow-neo flex-shrink-0"
+        >
+          <Zap className="w-4 h-4 text-[#B8FF3D]" />
+          <span>Revise What I Learned →</span>
+        </NextLink>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────
+          2. FOUR EDITORIAL ENTRY TILES (Watch, Topic, Recall, Build)
       ───────────────────────────────────────────────────────────── */}
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Entry 1: Watch a Video (Lime Accent) */}

@@ -98,13 +98,23 @@ export default function KnowledgeMapPage() {
             </p>
           </div>
 
-          <button
-            onClick={fetchGraphData}
-            className="neo-btn-outline px-3.5 py-2 text-xs font-bold font-display flex items-center gap-1.5 flex-shrink-0 self-start"
-          >
-            <RotateCw className="w-3.5 h-3.5" />
-            <span>Refresh Map</span>
-          </button>
+          <div className="flex items-center gap-2 flex-shrink-0 self-start">
+            <NextLink
+              href="/revision"
+              className="neo-btn-primary px-4 py-2 text-xs font-bold font-display flex items-center gap-1.5 shadow-neo-sm"
+            >
+              <Zap className="w-3.5 h-3.5 text-[#B8FF3D]" />
+              <span>Revise What I Learned →</span>
+            </NextLink>
+
+            <button
+              onClick={fetchGraphData}
+              className="neo-btn-outline px-3 py-2 text-xs font-bold font-display flex items-center gap-1.5"
+            >
+              <RotateCw className="w-3.5 h-3.5" />
+              <span>Refresh</span>
+            </button>
+          </div>
         </div>
 
         {/* Dynamic Metric Tiles */}
