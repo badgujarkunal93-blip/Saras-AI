@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import NextLink from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -9,15 +9,15 @@ import {
   Plus,
   Layers,
   Eye,
-  Bot,
   Flame,
-  Search,
   Loader2,
   Check,
   AlertCircle,
   Youtube,
-  BookOpen,
+  User,
 } from 'lucide-react';
+import { UserLearningSummary } from '@/lib/services/userProfile';
+import { ProfileDropdown } from '@/components/profile/ProfileDropdown';
 
 export function Navbar() {
   const pathname = usePathname();
@@ -28,23 +28,25 @@ export function Navbar() {
     type: 'idle' | 'success' | 'error';
     message?: string;
   }>({ type: 'idle' });
-  const [streakDays, setStreakDays] = useState<number>(0);
 
-  React.useEffect(() => {
-    const fetchStreak = async () => {
-      try {
-        const res = await fetch('/api/progress');
-        if (res.ok) {
-          const data = await res.json();
-          if (data.streakDays !== undefined) {
-            setStreakDays(data.streakDays);
-          }
-        }
-      } catch (e) {
-        console.warn('Failed to fetch streak:', e);
+  const [summary, setSummary] = useState<UserLearningSummary | null>(null);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  const fetchSummary = async () => {
+    try {
+      const tzOffset = typeof window !== 'undefined' ? new Date().getTimezoneOffset() : 0;
+      const res = await fetch(`/api/user/summary?tzOffset=${tzOffset}`);
+      if (res.ok) {
+        const data = await res.json();
+        setSummary(data.summary);
       }
-    };
-    fetchStreak();
+    } catch (e) {
+      console.warn('Failed to fetch user summary:', e);
+    }
+  };
+
+  useEffect(() => {
+    fetchSummary();
   }, [pathname]);
 
   const handleIngestSubmit = async (e: React.FormEvent) => {
@@ -71,6 +73,7 @@ export function Navbar() {
         message: data.cached ? 'Loaded from library' : 'Lesson segmented successfully',
       });
       setUrlInput('');
+      fetchSummary();
 
       if (data.video?.id) {
         setTimeout(() => {
@@ -93,6 +96,10 @@ export function Navbar() {
     { href: '/flashcards', label: 'Flashcards', icon: Layers },
     { href: '/focus', label: 'Deep Focus', icon: Eye },
   ];
+
+  const streakDays = summary?.streak?.currentStreak || 0;
+  const userInitials = summary?.user?.initials || 'S';
+  const userName = summary?.user?.name || 'Student';
 
   return (
     <header className="sticky top-0 z-40 w-full bg-[#F5F3EC] border-b-2 border-[#111218] transition-all">
@@ -185,22 +192,40 @@ export function Navbar() {
           </form>
         </div>
 
-        {/* Right Actions: Real Streak Badge & Profile */}
-        <div className="flex items-center gap-3">
+        {/* Right Actions: Real Dynamic Streak & Functional Profile Dropdown */}
+        <div className="relative flex items-center gap-3">
           {/* Motivation: Real Dynamic Study Streak */}
           <div
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FFFDF7] border-2 border-[#111218] shadow-neo-sm text-[#111218] text-xs font-bold font-display cursor-default"
             title={`${streakDays} active study day${streakDays === 1 ? '' : 's'} recorded`}
           >
-            <Flame className="w-4 h-4 text-[#111218] fill-[#B8FF3D]" />
+            <Flame
+              className={`w-4 h-4 ${
+                streakDays > 0 ? 'text-[#111218] fill-[#B8FF3D]' : 'text-slate-400 fill-slate-200'
+              }`}
+            />
             <span className="text-[#111218]">{streakDays}</span>
-            <span className="text-[#636573] font-medium text-[11px]">{streakDays === 1 ? 'day' : 'days'}</span>
+            <span className="text-[#636573] font-medium text-[11px]">
+              {streakDays === 1 ? 'day' : 'days'}
+            </span>
           </div>
 
-          {/* User Profile Avatar */}
-          <div className="w-8 h-8 rounded-full bg-[#B8FF3D] border-2 border-[#111218] shadow-neo-sm flex items-center justify-center text-[#111218] text-xs font-black font-display cursor-pointer hover:-translate-y-0.5 transition-all">
-            K
-          </div>
+          {/* Functional User Profile Avatar Button */}
+          <button
+            onClick={() => setIsProfileOpen(!isProfileOpen)}
+            className="w-9 h-9 rounded-2xl bg-[#B8FF3D] border-2 border-[#111218] shadow-neo-sm flex items-center justify-center text-[#111218] text-xs font-black font-display cursor-pointer hover:-translate-y-0.5 hover:shadow-neo transition-all"
+            title={`Logged in as ${userName}`}
+          >
+            {userInitials}
+          </button>
+
+          {/* Profile Menu Dropdown */}
+          <ProfileDropdown
+            summary={summary}
+            isOpen={isProfileOpen}
+            onClose={() => setIsProfileOpen(false)}
+            onRefresh={fetchSummary}
+          />
         </div>
       </div>
     </header>

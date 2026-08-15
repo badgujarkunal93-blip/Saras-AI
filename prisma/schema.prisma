@@ -404,3 +404,15 @@ model ExamPlanItem {
   @@index([status])
 }
 
+model UserProfile {
+  id         String   @id @default(cuid())
+  user_id    String   @unique
+  name       String   @default("Student")
+  email      String   @default("student@saras.ai")
+  avatar_url String?
+  created_at DateTime @default(now())
+  updated_at DateTime @default(now())
+
+  @@index([user_id])
+}
+
