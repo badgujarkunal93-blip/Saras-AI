@@ -200,6 +200,8 @@ model Concept {
   quiz_questions     ConceptQuizQuestion[]
   user_mastery       UserConceptMastery[]
   revision_items     RevisionSessionItem[]
+  exam_topics        ExamTopic[]
+  exam_plan_items    ExamPlanItem[]
 
   @@index([category])
   @@index([name])
@@ -323,3 +325,82 @@ model RevisionSessionItem {
   @@index([session_id])
   @@index([concept_id])
 }
+
+// ─────────────────────────────────────────────────────────────
+// ADAPTIVE EXAM MODE & STUDY PLANNING ENGINE
+// ─────────────────────────────────────────────────────────────
+
+model Exam {
+  id                String         @id @default(cuid())
+  user_id           String         @default("default_user")
+  name              String
+  exam_date         DateTime
+  daily_minutes     Int            @default(60)
+  goal              String?
+  status            String         @default("active") // 'active' | 'completed' | 'archived'
+  plan_version      Int            @default(1)
+  last_replanned_at DateTime       @default(now())
+  replan_reason     String?
+  created_at        DateTime       @default(now())
+  updated_at        DateTime       @default(now())
+
+  topics            ExamTopic[]
+  plan_days         ExamPlanDay[]
+
+  @@index([user_id])
+  @@index([status])
+  @@index([exam_date])
+}
+
+model ExamTopic {
+  id          String   @id @default(cuid())
+  exam_id     String
+  exam        Exam     @relation(fields: [exam_id], references: [id], onDelete: Cascade)
+  concept_id  String?
+  concept     Concept? @relation(fields: [concept_id], references: [id], onDelete: SetNull)
+  topic_name  String
+  priority    Int      @default(1) // 1: normal, 2: high, 3: urgent
+  created_at  DateTime @default(now())
+
+  @@index([exam_id])
+  @@index([concept_id])
+}
+
+model ExamPlanDay {
+  id          String         @id @default(cuid())
+  exam_id     String
+  exam        Exam           @relation(fields: [exam_id], references: [id], onDelete: Cascade)
+  day_number  Int
+  date        DateTime
+  status      String         @default("pending") // 'pending' | 'in_progress' | 'completed'
+  created_at  DateTime       @default(now())
+
+  items       ExamPlanItem[]
+
+  @@unique([exam_id, day_number])
+  @@index([exam_id])
+  @@index([date])
+}
+
+model ExamPlanItem {
+  id                   String      @id @default(cuid())
+  plan_day_id          String
+  plan_day             ExamPlanDay @relation(fields: [plan_day_id], references: [id], onDelete: Cascade)
+  concept_id           String?
+  concept              Concept?    @relation(fields: [concept_id], references: [id], onDelete: SetNull)
+  activity_type        String      // 'learn' | 'revision' | 'flashcards' | 'focus' | 'mock_exam'
+  title                String
+  description          String?
+  duration_minutes     Int         @default(30)
+  priority             Int         @default(1)
+  status               String      @default("pending") // 'pending' | 'in_progress' | 'completed' | 'skipped'
+  linked_resource_type String?     // 'video' | 'segment' | 'flashcard_deck' | 'revision'
+  linked_resource_id   String?     // video.id or segment.id
+  order_index          Int         @default(0)
+  completed_at         DateTime?
+
+  @@index([plan_day_id])
+  @@index([concept_id])
+  @@index([status])
+}
+

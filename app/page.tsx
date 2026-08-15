@@ -29,6 +29,7 @@ import {
   SlidersHorizontal,
   RotateCcw,
   Hammer,
+  GraduationCap,
 } from 'lucide-react';
 import {
   CURATED_LESSONS,
@@ -513,13 +514,23 @@ export default function DiscoverHomePage() {
           </p>
         </div>
 
-        <NextLink
-          href="/revision"
-          className="neo-btn-primary px-6 py-3 text-xs sm:text-sm font-bold font-display uppercase flex items-center justify-center gap-2 shadow-neo-sm hover:shadow-neo flex-shrink-0"
-        >
-          <Zap className="w-4 h-4 text-[#B8FF3D]" />
-          <span>Revise What I Learned →</span>
-        </NextLink>
+        <div className="flex flex-wrap items-center gap-3 flex-shrink-0">
+          <NextLink
+            href="/exam"
+            className="neo-btn-primary px-5 py-3 text-xs sm:text-sm font-bold font-display uppercase flex items-center justify-center gap-2 shadow-neo-sm hover:shadow-neo"
+          >
+            <GraduationCap className="w-4 h-4 text-[#B8FF3D]" />
+            <span>Exam Mode →</span>
+          </NextLink>
+
+          <NextLink
+            href="/revision"
+            className="neo-btn-lime px-5 py-3 text-xs sm:text-sm font-bold font-display uppercase flex items-center justify-center gap-2"
+          >
+            <Zap className="w-4 h-4 text-[#111218]" />
+            <span>Revise What I Learned</span>
+          </NextLink>
+        </div>
       </section>
 
       {/* ─────────────────────────────────────────────────────────────

@@ -23,6 +23,7 @@ import {
   Workflow,
   Network,
   RotateCw,
+  GraduationCap,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
@@ -52,6 +53,7 @@ export default function RootLayout({
   const navItems = [
     { href: '/', label: 'Discover', icon: Compass },
     { href: '/#explore-section', label: 'Explore Lessons', icon: BookOpen },
+    { href: '/exam', label: 'Exam Mode', icon: GraduationCap },
     { href: '/revision', label: 'AI Revision', icon: RotateCw },
     { href: '/knowledge', label: 'Knowledge Map', icon: Network },
     { href: '/flashcards', label: 'Flashcards Studio', icon: Layers },

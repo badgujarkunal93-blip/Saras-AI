@@ -18,6 +18,7 @@ import {
   Flame,
   Brain,
   Layers,
+  GraduationCap,
 } from 'lucide-react';
 import {
   KnowledgeGraphCanvas,
@@ -98,13 +99,21 @@ export default function KnowledgeMapPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2 flex-shrink-0 self-start">
+          <div className="flex flex-wrap items-center gap-2 flex-shrink-0 self-start">
+            <NextLink
+              href="/exam"
+              className="neo-btn-primary px-3.5 py-2 text-xs font-bold font-display flex items-center gap-1.5 shadow-neo-sm"
+            >
+              <GraduationCap className="w-3.5 h-3.5 text-[#B8FF3D]" />
+              <span>Exam Mode →</span>
+            </NextLink>
+
             <NextLink
               href="/revision"
-              className="neo-btn-primary px-4 py-2 text-xs font-bold font-display flex items-center gap-1.5 shadow-neo-sm"
+              className="neo-btn-lime px-3.5 py-2 text-xs font-bold font-display flex items-center gap-1.5"
             >
-              <Zap className="w-3.5 h-3.5 text-[#B8FF3D]" />
-              <span>Revise What I Learned →</span>
+              <Zap className="w-3.5 h-3.5 text-[#111218]" />
+              <span>AI Revision</span>
             </NextLink>
 
             <button
