@@ -169,6 +169,49 @@ export function SegmentedPlayer({
     };
   }, [youtubeVideoId]);
 
+  // Listen for external seek requests (e.g. from Smart Notes timestamp links)
+  useEffect(() => {
+    const handleSeekEvent = (e: any) => {
+      const targetSeconds = e.detail?.seconds;
+      if (
+        typeof targetSeconds === 'number' &&
+        playerRef.current &&
+        typeof playerRef.current.seekTo === 'function'
+      ) {
+        // Find which segment this timestamp belongs to
+        const segIdx = segments.findIndex(
+          (s) => targetSeconds >= s.start_seconds && targetSeconds <= s.end_seconds
+        );
+
+        if (segIdx !== -1) {
+          const targetSeg = segments[segIdx];
+          const isCompleted = completedSegmentIds.includes(targetSeg.id);
+          const isCurrent = segIdx === currentSegmentIdx;
+
+          if (isCompleted || isCurrent || segIdx <= currentSegmentIdx) {
+            setCurrentSegmentIdx(segIdx);
+            lastValidTimeRef.current = targetSeconds;
+            playerRef.current.seekTo(targetSeconds, true);
+            playerRef.current.playVideo();
+            setIsPlaying(true);
+            containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          } else {
+            triggerLockedNotice(`🔒 Chapter ${segIdx + 1} is locked! Complete current quiz to unlock.`);
+          }
+        } else {
+          lastValidTimeRef.current = targetSeconds;
+          playerRef.current.seekTo(targetSeconds, true);
+          playerRef.current.playVideo();
+          setIsPlaying(true);
+          containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }
+    };
+
+    window.addEventListener('seek-video-player', handleSeekEvent);
+    return () => window.removeEventListener('seek-video-player', handleSeekEvent);
+  }, [segments, completedSegmentIds, currentSegmentIdx]);
+
   // 2. Programmatic Enforcement & Boundary Monitoring Loop
   useEffect(() => {
     if (timeTrackerRef.current) clearInterval(timeTrackerRef.current);

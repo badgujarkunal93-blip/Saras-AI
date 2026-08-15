@@ -1,7 +1,12 @@
 import { db } from '@/lib/db';
 import { extractYouTubeId, getYouTubeThumbnail } from '@/lib/utils';
 import { fetchTranscript, fetchYouTubeMetadata } from './transcript';
-import { generateSegmentsAndQuizzes, generateTranscriptGroundedFlashcards, validateAndFilterFlashcards } from './ai';
+import {
+  generateSegmentsAndQuizzes,
+  generateTranscriptGroundedFlashcards,
+  validateAndFilterFlashcards,
+  generateSmartNotesForVideo,
+} from './ai';
 
 export interface IngestOptions {
   source?: 'manual' | 'chat';
@@ -32,6 +37,9 @@ export async function ingestVideo(youtubeUrl: string, options: IngestOptions = {
         include: { quiz_questions: true },
       },
       flashcards: true,
+      notes: {
+        orderBy: { order_index: 'asc' },
+      },
     },
   });
 
@@ -94,9 +102,18 @@ export async function ingestVideo(youtubeUrl: string, options: IngestOptions = {
     const aiResult = await generateSegmentsAndQuizzes(meta.title, transcriptItems, totalDuration);
     console.log(`[AI] generation completed with ${aiResult.segments.length} segments and ${aiResult.flashcards.length} grounded flashcards`);
 
-    // Step D: Persist everything to database in atomic transaction
+    // Step D: Run AI Smart Notes Synthesis
+    let smartNotes: any[] = [];
+    try {
+      smartNotes = await generateSmartNotesForVideo(meta.title, meta.channel, aiResult.segments, transcriptItems);
+      console.log(`[AI] Smart Notes synthesized: ${smartNotes.length} sections`);
+    } catch (e: any) {
+      console.warn(`[AI] Smart Notes generation non-fatal error:`, e.message);
+    }
+
+    // Step E: Persist everything to database in atomic transaction
     const updatedVideo = await db.$transaction(async (tx) => {
-      // Clear any prior partial segments/flashcards if retrying failed video
+      // Clear any prior partial segments/flashcards/notes if retrying failed video
       await tx.quizQuestion.deleteMany({
         where: { segment: { video_id: video.id } },
       });
@@ -104,6 +121,9 @@ export async function ingestVideo(youtubeUrl: string, options: IngestOptions = {
         where: { video_id: video.id },
       });
       await tx.flashcard.deleteMany({
+        where: { video_id: video.id },
+      });
+      await tx.smartNote.deleteMany({
         where: { video_id: video.id },
       });
 
@@ -121,6 +141,7 @@ export async function ingestVideo(youtubeUrl: string, options: IngestOptions = {
       });
 
       let totalQuizzesPersisted = 0;
+      const createdSegments: any[] = [];
 
       // Insert Segments and Quizzes
       for (const seg of aiResult.segments) {
@@ -134,6 +155,7 @@ export async function ingestVideo(youtubeUrl: string, options: IngestOptions = {
             end_seconds: seg.end_seconds,
           },
         });
+        createdSegments.push(createdSeg);
 
         // Insert Quiz Questions for this segment
         for (const q of seg.quiz_questions) {
@@ -162,7 +184,29 @@ export async function ingestVideo(youtubeUrl: string, options: IngestOptions = {
         });
       }
 
-      console.log(`[DB] persisted ${aiResult.segments.length} segments, ${totalQuizzesPersisted} quizzes, ${aiResult.flashcards.length} grounded flashcards`);
+      // Insert Smart Notes
+      for (let i = 0; i < smartNotes.length; i++) {
+        const note = smartNotes[i];
+        const matchedSeg =
+          note.segment_order_index != null && createdSegments[note.segment_order_index]
+            ? createdSegments[note.segment_order_index]
+            : null;
+
+        await tx.smartNote.create({
+          data: {
+            video_id: savedVideo.id,
+            segment_id: matchedSeg ? matchedSeg.id : null,
+            section_type: note.section_type,
+            title: note.title,
+            content: note.content,
+            source_start_seconds: note.source_start_seconds ?? null,
+            source_end_seconds: note.source_end_seconds ?? null,
+            order_index: i,
+          },
+        });
+      }
+
+      console.log(`[DB] persisted ${aiResult.segments.length} segments, ${totalQuizzesPersisted} quizzes, ${aiResult.flashcards.length} flashcards, ${smartNotes.length} smart notes`);
 
       // Initialize default user progress record
       await tx.userVideoProgress.upsert({
@@ -195,6 +239,9 @@ export async function ingestVideo(youtubeUrl: string, options: IngestOptions = {
           include: { quiz_questions: true },
         },
         flashcards: true,
+        notes: {
+          orderBy: { order_index: 'asc' },
+        },
       },
     });
 

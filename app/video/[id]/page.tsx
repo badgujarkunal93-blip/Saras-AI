@@ -22,9 +22,11 @@ import {
   Lock,
   Hammer,
   ArrowRight,
+  FileText,
 } from 'lucide-react';
 import NextLink from 'next/link';
 import { ProjectRoadmapView } from '@/components/projects/ProjectRoadmapView';
+import { SmartNotesView } from '@/components/notes/SmartNotesView';
 
 interface VideoDetail {
   id: string;
@@ -55,7 +57,7 @@ export default function VideoDetailPage() {
 
   const [video, setVideo] = useState<VideoDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'segments' | 'flashcards' | 'quiz_bank' | 'projects'>('segments');
+  const [activeTab, setActiveTab] = useState<'segments' | 'notes' | 'flashcards' | 'quiz_bank' | 'projects'>('segments');
   const [newCardFront, setNewCardFront] = useState('');
   const [newCardBack, setNewCardBack] = useState('');
   const [isAddingCard, setIsAddingCard] = useState(false);
@@ -292,6 +294,18 @@ export default function VideoDetailPage() {
           >
             <BookOpen className="w-3.5 h-3.5" />
             <span>Chapter Summaries ({video.segments.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('notes')}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold font-display uppercase transition-all ${
+              activeTab === 'notes'
+                ? 'bg-[#B8FF3D] text-[#111218] border-2 border-[#111218] shadow-neo-sm'
+                : 'text-[#111218] hover:bg-[#F5F3EC]'
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>Smart Notes 📝</span>
           </button>
 
           <button
@@ -566,6 +580,13 @@ export default function VideoDetailPage() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Tab Content 2: Smart Notes */}
+        {activeTab === 'notes' && (
+          <div className="pt-2">
+            <SmartNotesView videoId={video.id} videoTitle={video.title} />
           </div>
         )}
 

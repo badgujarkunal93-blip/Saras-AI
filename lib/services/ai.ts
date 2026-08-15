@@ -1236,3 +1236,373 @@ Generate the grounded project recommendation JSON now:`;
   };
 }
 
+export interface SmartNoteItem {
+  section_type:
+    | 'overview'
+    | 'key_concepts'
+    | 'definitions'
+    | 'core_explanations'
+    | 'examples'
+    | 'takeaways'
+    | 'common_mistakes'
+    | 'quick_revision';
+  title: string;
+  content: string;
+  source_start_seconds?: number | null;
+  source_end_seconds?: number | null;
+  segment_order_index?: number | null;
+}
+
+export interface GeneratedSmartNotesResult {
+  overview: string;
+  quick_revision: string;
+  key_concepts: {
+    title: string;
+    explanation: string;
+    source_start_seconds?: number;
+    source_end_seconds?: number;
+    segment_index?: number;
+  }[];
+  definitions: {
+    term: string;
+    definition: string;
+    source_start_seconds?: number;
+  }[];
+  core_explanations: {
+    title: string;
+    content: string;
+    source_start_seconds?: number;
+    source_end_seconds?: number;
+  }[];
+  examples: {
+    title: string;
+    description: string;
+    source_start_seconds?: number;
+  }[];
+  important_takeaways: string[];
+  common_mistakes: string[];
+}
+
+/**
+ * Validates and converts generated smart notes into structured database items.
+ * Filters out hallucinations or app-specific leaks.
+ */
+export function validateAndConvertSmartNotes(
+  raw: Partial<GeneratedSmartNotesResult>,
+  videoTitle: string,
+  segments: { id?: string; order_index?: number; start_seconds?: number; end_seconds?: number }[]
+): SmartNoteItem[] {
+  const isVideoAboutEdTech =
+    videoTitle.toLowerCase().includes('learnly') ||
+    videoTitle.toLowerCase().includes('saras') ||
+    videoTitle.toLowerCase().includes('spaced repetition');
+
+  const forbiddenTerms = [
+    'learnly',
+    'saras',
+    'saras ai',
+    'quiz gating',
+    'strict focus',
+    'checkpoint quiz',
+    'deep focus',
+    'the learnly platform',
+    'the saras platform',
+  ];
+
+  const sanitize = (text: string): string => {
+    if (isVideoAboutEdTech) return text;
+    let clean = text;
+    for (const term of forbiddenTerms) {
+      const reg = new RegExp(`\\b${term}\\b`, 'gi');
+      clean = clean.replace(reg, 'study system');
+    }
+    return clean;
+  };
+
+  const notes: SmartNoteItem[] = [];
+
+  // 1. Overview
+  if (raw.overview && raw.overview.trim().length > 15) {
+    notes.push({
+      section_type: 'overview',
+      title: 'Video Overview & Learning Objectives',
+      content: sanitize(raw.overview.trim()),
+      source_start_seconds: 0,
+      source_end_seconds: segments[0]?.end_seconds || 120,
+      segment_order_index: 0,
+    });
+  }
+
+  // 2. Key Concepts
+  if (Array.isArray(raw.key_concepts)) {
+    for (const kc of raw.key_concepts) {
+      if (kc.title && kc.explanation) {
+        notes.push({
+          section_type: 'key_concepts',
+          title: sanitize(kc.title.trim()),
+          content: sanitize(kc.explanation.trim()),
+          source_start_seconds: kc.source_start_seconds ?? null,
+          source_end_seconds: kc.source_end_seconds ?? null,
+          segment_order_index: kc.segment_index ?? null,
+        });
+      }
+    }
+  }
+
+  // 3. Definitions
+  if (Array.isArray(raw.definitions)) {
+    for (const def of raw.definitions) {
+      if (def.term && def.definition) {
+        notes.push({
+          section_type: 'definitions',
+          title: sanitize(def.term.trim()),
+          content: sanitize(def.definition.trim()),
+          source_start_seconds: def.source_start_seconds ?? null,
+          source_end_seconds: null,
+        });
+      }
+    }
+  }
+
+  // 4. Core Explanations
+  if (Array.isArray(raw.core_explanations)) {
+    for (const ce of raw.core_explanations) {
+      if (ce.title && ce.content) {
+        notes.push({
+          section_type: 'core_explanations',
+          title: sanitize(ce.title.trim()),
+          content: sanitize(ce.content.trim()),
+          source_start_seconds: ce.source_start_seconds ?? null,
+          source_end_seconds: ce.source_end_seconds ?? null,
+        });
+      }
+    }
+  }
+
+  // 5. Examples
+  if (Array.isArray(raw.examples)) {
+    for (const ex of raw.examples) {
+      if (ex.title && ex.description) {
+        notes.push({
+          section_type: 'examples',
+          title: sanitize(ex.title.trim()),
+          content: sanitize(ex.description.trim()),
+          source_start_seconds: ex.source_start_seconds ?? null,
+          source_end_seconds: null,
+        });
+      }
+    }
+  }
+
+  // 6. Important Takeaways
+  if (Array.isArray(raw.important_takeaways) && raw.important_takeaways.length > 0) {
+    const validTakeaways = raw.important_takeaways
+      .filter((t) => typeof t === 'string' && t.trim().length > 5)
+      .map((t) => sanitize(t.trim()));
+
+    if (validTakeaways.length > 0) {
+      notes.push({
+        section_type: 'takeaways',
+        title: 'Core Rules & Important Takeaways',
+        content: JSON.stringify(validTakeaways),
+        source_start_seconds: null,
+        source_end_seconds: null,
+      });
+    }
+  }
+
+  // 7. Common Mistakes / Misconceptions (if any)
+  if (Array.isArray(raw.common_mistakes) && raw.common_mistakes.length > 0) {
+    const validMistakes = raw.common_mistakes
+      .filter((m) => typeof m === 'string' && m.trim().length > 5)
+      .map((m) => sanitize(m.trim()));
+
+    if (validMistakes.length > 0) {
+      notes.push({
+        section_type: 'common_mistakes',
+        title: 'Common Misconceptions & Pitfalls',
+        content: JSON.stringify(validMistakes),
+        source_start_seconds: null,
+        source_end_seconds: null,
+      });
+    }
+  }
+
+  // 8. Quick Revision
+  if (raw.quick_revision && raw.quick_revision.trim().length > 20) {
+    notes.push({
+      section_type: 'quick_revision',
+      title: 'High-Density Quick Revision Sheet',
+      content: sanitize(raw.quick_revision.trim()),
+      source_start_seconds: null,
+      source_end_seconds: null,
+    });
+  }
+
+  return notes;
+}
+
+/**
+ * Generates structured, segment-grounded Smart Notes for a video from its transcript.
+ */
+export async function generateSmartNotesForVideo(
+  videoTitle: string,
+  channel: string,
+  segments: { id?: string; title: string; summary?: string | null; start_seconds: number; end_seconds: number; order_index: number }[],
+  transcriptItems?: TranscriptItem[]
+): Promise<SmartNoteItem[]> {
+  const groqKey = process.env.GROQ_API_KEY;
+
+  const segmentOutline = segments
+    .map((s, idx) => `Part ${idx + 1} [${Math.floor(s.start_seconds / 60)}:${String(s.start_seconds % 60).padStart(2, '0')} - ${Math.floor(s.end_seconds / 60)}:${String(s.end_seconds % 60).padStart(2, '0')}]: "${s.title}"\nSummary: ${s.summary || 'Core concept'}`)
+    .join('\n\n');
+
+  const transcriptSample = (transcriptItems || [])
+    .slice(0, 150)
+    .map((t) => `[${Math.floor(t.offset / 60)}:${String(Math.floor(t.offset % 60)).padStart(2, '0')}] ${t.text}`)
+    .join('\n');
+
+  const systemPrompt = `You are Saras AI's Smart Study Notes Synthesizer.
+Your goal is to generate high-density, accurate, segment-grounded STUDY NOTES from the actual content of this video lecture.
+
+RULES:
+1. GROUNDING: Use ONLY concepts, facts, mechanisms, and examples explicitly explained in this video. Do not use outside knowledge.
+2. NO PRODUCT HALLUCINATIONS: Do NOT mention Saras AI, Learnly, quiz gating, spaced repetition, or attention monitoring unless the video is explicitly about edtech.
+3. CONCISE & DENSE: Write clear, high-yield bulleted notes that help a student review quickly.
+4. TIMESTAMPS: Attach accurate source_start_seconds when a concept or term is introduced.
+
+OUTPUT JSON FORMAT (STRICT):
+{
+  "overview": "2-3 sentences explaining the overarching objective and core thesis of the lesson.",
+  "key_concepts": [
+    {
+      "title": "Concept Name",
+      "explanation": "Clear 2-sentence explanation of what it does and how it works.",
+      "source_start_seconds": 65,
+      "source_end_seconds": 180,
+      "segment_index": 0
+    }
+  ],
+  "definitions": [
+    {
+      "term": "Term Name",
+      "definition": "Precise definition given or implied in the video.",
+      "source_start_seconds": 45
+    }
+  ],
+  "core_explanations": [
+    {
+      "title": "Mechanism / Process Name",
+      "content": "Detailed step-by-step mechanism breakdown.",
+      "source_start_seconds": 120,
+      "source_end_seconds": 240
+    }
+  ],
+  "examples": [
+    {
+      "title": "Example Name",
+      "description": "Concrete example or analogy used by the speaker.",
+      "source_start_seconds": 210
+    }
+  ],
+  "important_takeaways": [
+    "Key takeaway 1",
+    "Key takeaway 2",
+    "Key takeaway 3"
+  ],
+  "common_mistakes": [
+    "Common pitfall or misunderstanding addressed in the video (omit if none)"
+  ],
+  "quick_revision": "A 3-4 sentence rapid recap of everything taught in the lecture."
+}`;
+
+  const userPrompt = `VIDEO TITLE: "${videoTitle}"
+CREATOR / CHANNEL: "${channel}"
+
+SEGMENTS IN THE VIDEO:
+${segmentOutline}
+
+TRANSCRIPT SAMPLE:
+${transcriptSample.slice(0, 4000)}
+
+Generate the structured Smart Notes JSON now:`;
+
+  if (groqKey) {
+    try {
+      console.log(`[GROQ] Generating Smart Notes for "${videoTitle}" (Llama 3.3 70B)...`);
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${groqKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+          response_format: { type: 'json_object' },
+          temperature: 0.2,
+          max_tokens: 3000,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const content = data.choices?.[0]?.message?.content;
+        if (content) {
+          const parsed = JSON.parse(content);
+          const validatedNotes = validateAndConvertSmartNotes(parsed, videoTitle, segments);
+          if (validatedNotes.length > 0) {
+            console.log(`[GROQ] Generated ${validatedNotes.length} validated smart note sections for "${videoTitle}".`);
+            return validatedNotes;
+          }
+        }
+      }
+    } catch (e: any) {
+      console.warn('[GROQ] Smart notes generation error:', e.message);
+    }
+  }
+
+  // Deterministic Fallback grounded in segments
+  console.log(`[SMART_NOTES] Using deterministic segment-grounded fallback for "${videoTitle}"`);
+  const fallbackNotes: SmartNoteItem[] = [
+    {
+      section_type: 'overview',
+      title: 'Video Overview & Core Thesis',
+      content: `This lecture provides a structured walkthrough of ${videoTitle}, decomposing the material into ${segments.length} sequential learning chapters.`,
+      source_start_seconds: 0,
+      source_end_seconds: segments[0]?.end_seconds || 120,
+      segment_order_index: 0,
+    },
+    ...segments.map((seg, idx) => ({
+      section_type: 'key_concepts' as const,
+      title: seg.title,
+      content: seg.summary || `Core concepts, mechanisms, and rules of thumb covering ${seg.title}.`,
+      source_start_seconds: seg.start_seconds,
+      source_end_seconds: seg.end_seconds,
+      segment_order_index: idx,
+    })),
+    {
+      section_type: 'takeaways',
+      title: 'Core Rules & Important Takeaways',
+      content: JSON.stringify(
+        segments.map((s) => `Master the fundamental principles and operational trade-offs of ${s.title}.`)
+      ),
+      source_start_seconds: null,
+      source_end_seconds: null,
+    },
+    {
+      section_type: 'quick_revision',
+      title: 'High-Density Quick Revision Sheet',
+      content: `Key review sheet covering: ${segments.map((s) => s.title).join(' → ')}. Review each chapter's checkpoint questions to verify retention.`,
+      source_start_seconds: null,
+      source_end_seconds: null,
+    },
+  ];
+
+  return fallbackNotes;
+}
+
+

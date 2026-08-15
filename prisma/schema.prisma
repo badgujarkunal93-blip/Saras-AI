@@ -26,6 +26,7 @@ model Video {
   tasks            Task[]
   attention_events AttentionEvent[]
   projects         ProjectIdea[]
+  notes            SmartNote[]
 
   @@index([youtube_video_id])
 }
@@ -42,6 +43,7 @@ model Segment {
 
   quiz_questions   QuizQuestion[]
   attention_events AttentionEvent[]
+  notes            SmartNote[]
 
   @@index([video_id])
 }
@@ -152,4 +154,24 @@ model UserProject {
 
   @@unique([user_id, project_idea_id])
   @@index([user_id])
+}
+
+model SmartNote {
+  id                   String   @id @default(cuid())
+  video_id             String
+  video                Video    @relation(fields: [video_id], references: [id], onDelete: Cascade)
+  segment_id           String?
+  segment              Segment? @relation(fields: [segment_id], references: [id], onDelete: SetNull)
+  section_type         String   // 'overview' | 'key_concepts' | 'definitions' | 'core_explanations' | 'examples' | 'takeaways' | 'common_mistakes' | 'quick_revision'
+  title                String
+  content              String   // Formatted study content / explanation
+  source_start_seconds Int?
+  source_end_seconds   Int?
+  order_index          Int      @default(0)
+  created_at           DateTime @default(now())
+  updated_at           DateTime @default(now())
+
+  @@index([video_id])
+  @@index([segment_id])
+  @@index([section_type])
 }
