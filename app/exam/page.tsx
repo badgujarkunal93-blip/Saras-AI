@@ -375,7 +375,7 @@ function ExamPageContent() {
               Adaptive Exam Mode
             </h1>
             <p className="text-xs sm:text-sm text-[#636573] font-medium leading-relaxed">
-              Tell Saras what you're preparing for, how much time you have, and when the exam is. Saras dynamically builds and continuously adapts your study plan using your real Knowledge Map mastery.
+              Tell Saras what you&apos;re preparing for, how much time you have, and when the exam is. Saras dynamically builds and continuously adapts your study plan using your real Knowledge Map mastery.
             </p>
           </div>
 
@@ -589,7 +589,7 @@ function ExamPageContent() {
                     </span>
                   </div>
                   <h2 className="text-2xl font-extrabold text-[#111218] font-display uppercase tracking-tight">
-                    Today's Study Plan
+                    Today&apos;s Study Plan
                   </h2>
                 </div>
 
