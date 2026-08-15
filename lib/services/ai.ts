@@ -191,36 +191,102 @@ export async function generateSegmentsAndQuizzes(
   return generateHeuristicSegmentsAndQuizzes(videoTitle, transcriptItems, totalDuration);
 }
 
-/**
- * Chat Assistant Reply Generator
- * Powers the AI Co-pilot tutor and learning recommendations
- */
-export async function chatAssistantReply(
-  userPrompt: string,
-  history: { role: string; content: string }[]
-): Promise<{
+// ─────────────────────────────────────────────────────────────
+// Chat Assistant Interfaces & Types
+// ─────────────────────────────────────────────────────────────
+export interface ChatContext {
+  userId?: string;
+  videoTitle?: string;
+  channel?: string;
+  segmentTitle?: string;
+  segmentTranscript?: string;
+  smartNotesOverview?: string;
+  conceptNames?: string[];
+  userWeakConcepts?: string[];
+  userMasteredConcepts?: string[];
+  activeExamTitle?: string;
+  activeExamDaysLeft?: number;
+  activeProjectTitle?: string;
+}
+
+export interface ChatAssistantResult {
   reply: string;
+  provider: string;
   suggestedVideos?: {
     id: string;
     title: string;
     channel: string;
     thumbnail_url: string;
     youtube_url: string;
+    reason?: string;
   }[];
-}> {
+  generatedFlashcards?: {
+    front: string;
+    back: string;
+  }[];
+}
+
+/**
+ * Chat Assistant Reply Generator
+ * Powers the Saras AI Co-pilot tutor with real-time video, segment, concept, and mastery grounding.
+ */
+export async function chatAssistantReply(
+  userPrompt: string,
+  history: { role: string; content: string }[],
+  context?: ChatContext
+): Promise<ChatAssistantResult> {
   const groqKey = process.env.GROQ_API_KEY;
   const claudeKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY;
 
-  const systemPrompt = `You are Saras AI, an expert cognitive learning companion.
-Your goal is to explain video concepts directly, clearly, and concisely.
-Answer questions about programming, computer science, hardware, mathematics, and science with pedagogical clarity.`;
+  // Build high-fidelity grounded system prompt
+  let contextBlock = '';
+  if (context?.videoTitle) {
+    contextBlock += `\nCURRENT LESSON CONTEXT:\n- Video: "${context.videoTitle}" by ${context.channel || 'Unknown'}`;
+    if (context.segmentTitle) {
+      contextBlock += `\n- Active Chapter: "${context.segmentTitle}"`;
+    }
+    if (context.conceptNames && context.conceptNames.length > 0) {
+      contextBlock += `\n- Associated Concepts: ${context.conceptNames.join(', ')}`;
+    }
+    if (context.smartNotesOverview) {
+      contextBlock += `\n- Lesson Overview: ${context.smartNotesOverview}`;
+    }
+    if (context.segmentTranscript) {
+      contextBlock += `\n- Segment Source Transcript:\n"""\n${context.segmentTranscript.slice(0, 1500)}\n"""`;
+    }
+  }
 
-  // 1. Groq Chat Completion (Free & ultra-fast)
+  if (context?.userWeakConcepts && context.userWeakConcepts.length > 0) {
+    contextBlock += `\nLEARNER PROFILE:\n- Weak Concepts needing review: ${context.userWeakConcepts.join(', ')}`;
+  }
+  if (context?.userMasteredConcepts && context.userMasteredConcepts.length > 0) {
+    contextBlock += `\n- Mastered Concepts: ${context.userMasteredConcepts.join(', ')}`;
+  }
+  if (context?.activeExamTitle) {
+    contextBlock += `\n- Upcoming Exam: "${context.activeExamTitle}" (${context.activeExamDaysLeft || 'N/A'} days remaining)`;
+  }
+
+  const systemPrompt = `You are Saras AI, an expert cognitive pair-learning tutor and pedagogical companion.
+${contextBlock ? contextBlock : '\n(Note: No specific video is currently open. The user is in the general workspace.)'}
+
+CRITICAL INSTRUCTIONS:
+1. GROUNDING: When answering questions about a current lesson, chapter, or transcript, prioritize the provided source content above all else.
+2. TRUTHFULNESS: Never invent user mastery, test scores, or progress that is not provided in context. If you don't know the user's history, state that you need more study activity to evaluate it.
+3. HARDER QUESTIONS: If the user asks for a "harder question" or conceptual challenge, generate a challenging diagnostic multiple-choice question testing mechanisms, trade-offs, or edge cases with 4 labeled options (A, B, C, D) and a clear, hidden explanation.
+4. FLASHCARDS: If the user requests flashcards (e.g. "Create flashcards for..."), generate 3-5 concise, high-yield active recall question-answer pairs and include them in a valid JSON block at the very end of your response:
+\`\`\`json
+[
+  { "front": "Specific diagnostic question?", "back": "Precise conceptual answer" }
+]
+\`\`\`
+5. EXPLANATIONS: Explain concepts with architectural clarity, intuitive analogies, and pedagogical rigor. Keep answers focused and digestible.`;
+
+  // 1. Primary Provider: Groq Cloud (Llama 3.3 70B)
   if (groqKey) {
     try {
       const messages = [
         { role: 'system', content: systemPrompt },
-        ...history.slice(-4).map((h) => ({
+        ...history.slice(-6).map((h) => ({
           role: h.role === 'assistant' ? 'assistant' : 'user',
           content: h.content,
         })),
@@ -237,24 +303,46 @@ Answer questions about programming, computer science, hardware, mathematics, and
           model: 'llama-3.3-70b-versatile',
           messages,
           temperature: 0.5,
-          max_tokens: 800,
+          max_tokens: 1000,
         }),
       });
 
       if (res.ok) {
         const data = await res.json();
-        const replyText = data.choices?.[0]?.message?.content || '';
+        const rawReply = data.choices?.[0]?.message?.content || '';
+
+        // Extract JSON flashcards if present
+        let cleanReply = rawReply;
+        let generatedCards: { front: string; back: string }[] | undefined;
+        const jsonMatch = rawReply.match(/```json\s*([\s\S]*?)\s*```/);
+        if (jsonMatch) {
+          try {
+            const parsed = JSON.parse(jsonMatch[1]);
+            if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].front && parsed[0].back) {
+              generatedCards = parsed;
+              cleanReply = rawReply.replace(/```json[\s\S]*?```/, '').trim();
+            }
+          } catch {
+            // keep raw reply if parse fails
+          }
+        }
+
         return {
-          reply: replyText,
+          reply: cleanReply,
+          provider: 'Groq (LLaMA 3.3 70B)',
           suggestedVideos: findRelevantCuratedVideos(userPrompt),
+          generatedFlashcards: generatedCards,
         };
+      } else {
+        const errText = await res.text();
+        console.warn(`[GROQ CHAT ERROR ${res.status}]:`, errText);
       }
-    } catch (e) {
-      console.warn('[GROQ CHAT] API call failed, falling back:', e);
+    } catch (e: any) {
+      console.warn('[GROQ CHAT] API call failed, falling back:', e?.message || e);
     }
   }
 
-  // 2. Claude Chat Completion Fallback
+  // 2. Fallback Provider: Anthropic Claude (Claude 3.5 Sonnet)
   if (claudeKey) {
     try {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -269,7 +357,7 @@ Answer questions about programming, computer science, hardware, mathematics, and
           max_tokens: 1000,
           system: systemPrompt,
           messages: [
-            ...history.slice(-4).map((h) => ({
+            ...history.slice(-6).map((h) => ({
               role: h.role === 'assistant' ? 'assistant' : 'user',
               content: h.content,
             })),
@@ -280,45 +368,43 @@ Answer questions about programming, computer science, hardware, mathematics, and
 
       if (res.ok) {
         const data = await res.json();
-        const replyText = data.content?.[0]?.text || '';
+        const rawReply = data.content?.[0]?.text || '';
+
+        // Extract JSON flashcards if present
+        let cleanReply = rawReply;
+        let generatedCards: { front: string; back: string }[] | undefined;
+        const jsonMatch = rawReply.match(/```json\s*([\s\S]*?)\s*```/);
+        if (jsonMatch) {
+          try {
+            const parsed = JSON.parse(jsonMatch[1]);
+            if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].front && parsed[0].back) {
+              generatedCards = parsed;
+              cleanReply = rawReply.replace(/```json[\s\S]*?```/, '').trim();
+            }
+          } catch {
+            // keep raw reply
+          }
+        }
+
         return {
-          reply: replyText,
+          reply: cleanReply,
+          provider: 'Anthropic (Claude 3.5 Sonnet)',
           suggestedVideos: findRelevantCuratedVideos(userPrompt),
+          generatedFlashcards: generatedCards,
         };
+      } else {
+        const errText = await res.text();
+        console.warn(`[CLAUDE CHAT ERROR ${res.status}]:`, errText);
       }
-    } catch (e) {
-      console.warn('[CLAUDE CHAT] API call failed, falling back:', e);
+    } catch (e: any) {
+      console.warn('[CLAUDE CHAT] API call failed:', e?.message || e);
     }
   }
 
-  // Intelligent domain-aware response generator
-  const q = userPrompt.toLowerCase();
-  let reply = '';
-
-  if (q.includes('cpu') || q.includes('pc component') || q.includes('gpu') || q.includes('ram')) {
-    reply = `In a computer system:
-- **CPU (Central Processing Unit)**: The brain that executes software instructions and calculations.
-- **RAM (Random Access Memory)**: Fast, volatile temporary storage holding active working data for running programs.
-- **GPU (Graphics Processing Unit)**: Specialized processor for massive parallel computations, rendering 3D graphics, and video.
-- **Motherboard**: The main circuit board interconnecting all components.
-- **PSU**: Converts wall AC power into clean, regulated DC voltage.`;
-  } else if (q.includes('neural') || q.includes('deep learning') || q.includes('ai')) {
-    reply = `Neural networks learn representations through stacked linear transformations (weights and biases) followed by non-linear activations (like ReLU or Sigmoid). Backpropagation computes loss gradients, enabling gradient descent to optimize parameters.`;
-  } else if (q.includes('react') || q.includes('server components') || q.includes('next.js')) {
-    reply = `React Server Components (RSC) execute on the server, streaming pre-rendered HTML and component tree payloads without adding JavaScript bundle overhead to the client.`;
-  } else if (q.includes('python') || q.includes('beginner')) {
-    reply = `Python is a high-level interpreted language emphasizing clean syntax and object orientation. It features dynamic typing, automatic memory management with garbage collection, and rich standard data structures (lists, dictionaries, tuples).`;
-  } else {
-    reply = `Here is the key conceptual breakdown for **${userPrompt}**:
-1. **Core Mechanism**: Identify the foundational components and how data flows between them.
-2. **Key Trade-offs**: Examine performance bottlenecks, memory overhead, and implementation complexity.
-3. **Active Practice**: Test your understanding by defining each component in your own words.`;
-  }
-
-  return {
-    reply,
-    suggestedVideos: findRelevantCuratedVideos(userPrompt),
-  };
+  // Honest failure when no provider succeeds
+  throw new Error(
+    'AI assistant service is currently unavailable. Please verify your GROQ_API_KEY configuration.'
+  );
 }
 
 function findRelevantCuratedVideos(query: string) {

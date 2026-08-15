@@ -19,6 +19,7 @@ import {
   BookOpen,
   ArrowRight,
   ArrowUpRight,
+  RotateCw,
 } from 'lucide-react';
 
 interface ChatMessageItem {
@@ -41,23 +42,41 @@ export function ChatAssistant({ isOpen, onClose }: ChatAssistantProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [ingestingUrl, setIngestingUrl] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [runtimeProvider, setRuntimeProvider] = useState<string>('Groq (LLaMA 3.3 70B)');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+  const isVideoPage = pathname.startsWith('/video/');
+  const currentVideoId = isVideoPage ? pathname.split('/')[2] : undefined;
   const isFlashcardsPage = pathname.includes('/flashcards');
+  const isKnowledgePage = pathname.includes('/knowledge');
 
-  const suggestedPrompts = isFlashcardsPage
+  const suggestedPrompts = isVideoPage
+    ? [
+        'Explain what I just learned',
+        'Give me a harder question',
+        'Create flashcards for this lesson',
+        'Explain the core mechanism',
+      ]
+    : isFlashcardsPage
     ? [
         'Explain this flashcard concept',
         'Make this question harder',
-        'Give me an intuitive example',
+        'Give me an intuitive analogy',
         'Quiz me on this topic',
+      ]
+    : isKnowledgePage
+    ? [
+        'What should I revise today?',
+        'Explain the prerequisite connections',
+        'Give me a harder question',
+        'Recommend a video for my weak areas',
       ]
     : [
         'Explain what I just learned',
         'Give me a harder question',
-        'Create flashcards for Neural Networks',
-        'Find my weak topics & suggest a video',
+        'What should I revise today?',
+        'Explain backpropagation simply',
       ];
 
   const fetchHistory = async () => {
@@ -90,7 +109,7 @@ export function ChatAssistant({ isOpen, onClose }: ChatAssistantProps) {
     return () => {
       window.removeEventListener('open-learnly-ai', handleGlobalPrompt as EventListener);
     };
-  }, []);
+  }, [currentVideoId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -115,14 +134,24 @@ export function ChatAssistant({ isOpen, onClose }: ChatAssistantProps) {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userText }),
+        body: JSON.stringify({
+          message: userText,
+          videoId: currentVideoId,
+        }),
       });
 
       if (res.ok) {
         const data = await res.json();
         setMessages((prev) => [...prev, data.reply]);
+        if (data.provider) {
+          setRuntimeProvider(data.provider);
+        }
+        if (data.video?.id && !isVideoPage) {
+          router.push(`/video/${data.video.id}`);
+        }
       } else {
-        throw new Error('Failed to get response');
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || 'Failed to get response');
       }
     } catch (e: any) {
       setMessages((prev) => [
@@ -130,7 +159,7 @@ export function ChatAssistant({ isOpen, onClose }: ChatAssistantProps) {
         {
           id: 'err-' + Date.now(),
           role: 'assistant',
-          content: `Sorry, I encountered an issue: ${e.message || 'Please try again'}.`,
+          content: `⚠️ ${e.message || 'I encountered an issue connecting to the AI service. Please try again.'}`,
           created_at: new Date().toISOString(),
         },
       ]);
@@ -142,6 +171,17 @@ export function ChatAssistant({ isOpen, onClose }: ChatAssistantProps) {
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     sendMessage(input);
+  };
+
+  const handleClearChat = async () => {
+    if (confirm('Clear your conversation history?')) {
+      try {
+        await fetch('/api/chat', { method: 'DELETE' });
+        setMessages([]);
+      } catch (e) {
+        console.error('Failed to clear chat:', e);
+      }
+    }
   };
 
   const handleAddVideoFromChat = async (youtubeUrl: string) => {
@@ -157,8 +197,8 @@ export function ChatAssistant({ isOpen, onClose }: ChatAssistantProps) {
       });
 
       const data = await res.json();
-      if (res.ok && data.message) {
-        setMessages((prev) => [...prev, data.message]);
+      if (res.ok && data.reply) {
+        setMessages((prev) => [...prev, data.reply]);
         if (data.video?.id) {
           router.push(`/video/${data.video.id}`);
         }
@@ -189,13 +229,26 @@ export function ChatAssistant({ isOpen, onClose }: ChatAssistantProps) {
           <div>
             <h3 className="text-xs font-extrabold text-white font-display uppercase tracking-tight flex items-center gap-1.5">
               Saras AI
-              <span className="badge-lime px-1.5 py-0.2 text-[9px]">Groq</span>
+              <span className="badge-lime px-1.5 py-0.2 text-[9px] font-mono font-bold">
+                {runtimeProvider.includes('Groq') ? 'Groq LLaMA 3.3' : runtimeProvider.includes('Claude') ? 'Claude 3.5' : 'AI Online'}
+              </span>
             </h3>
-            <p className="text-[10px] text-slate-300 font-medium">Your learning companion</p>
+            <p className="text-[10px] text-slate-300 font-medium">
+              {isVideoPage ? 'Grounded in current lesson' : 'Your learning companion'}
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
+          {messages.length > 0 && (
+            <button
+              onClick={handleClearChat}
+              className="p-1.5 text-slate-400 hover:text-red-400 rounded-lg hover:bg-white/10 transition-colors"
+              title="Clear chat history"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
           <button
             onClick={() => setIsExpanded(!isExpanded)}
             className="p-1.5 text-slate-300 hover:text-white rounded-lg hover:bg-white/10 transition-colors"
@@ -224,7 +277,7 @@ export function ChatAssistant({ isOpen, onClose }: ChatAssistantProps) {
             key={idx}
             onClick={() => sendMessage(prompt)}
             disabled={isLoading}
-            className="px-2.5 py-1 rounded-lg bg-[#21232C] hover:bg-[#B8FF3D] hover:text-[#111218] border border-white/10 hover:border-[#111218] text-[10px] font-semibold text-slate-200 whitespace-nowrap flex-shrink-0 transition-colors"
+            className="px-2.5 py-1 rounded-lg bg-[#21232C] hover:bg-[#B8FF3D] hover:text-[#111218] border border-white/10 hover:border-[#111218] text-[10px] font-semibold text-slate-200 whitespace-nowrap flex-shrink-0 transition-colors disabled:opacity-50"
           >
             {prompt}
           </button>
@@ -233,6 +286,22 @@ export function ChatAssistant({ isOpen, onClose }: ChatAssistantProps) {
 
       {/* Message Stream */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#1A1B22]/50">
+        {messages.length === 0 && !isLoading && (
+          <div className="text-center py-10 space-y-3">
+            <div className="w-10 h-10 rounded-2xl bg-[#B8FF3D] border-2 border-[#111218] flex items-center justify-center mx-auto text-[#111218] shadow-neo-sm">
+              <Bot className="w-5 h-5" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-bold text-white uppercase font-display">
+                How can I assist your study session?
+              </p>
+              <p className="text-[11px] text-slate-300 max-w-xs mx-auto">
+                Ask any question, request harder conceptual quizzes, create study flashcards, or paste a YouTube URL to ingest a new course.
+              </p>
+            </div>
+          </div>
+        )}
+
         {messages.map((msg) => {
           const isUser = msg.role === 'user';
           return (
@@ -264,7 +333,7 @@ export function ChatAssistant({ isOpen, onClose }: ChatAssistantProps) {
                         <Sparkles className="w-3.5 h-3.5 text-[#111218]" /> Recommended Lessons:
                       </p>
                       {msg.suggested_video_ids.map((sug: any, idx: number) => {
-                        const isIngestingThis = ingestingUrl === sug.youtubeUrl;
+                        const isIngestingThis = ingestingUrl === sug.youtube_url;
 
                         return (
                           <div
@@ -283,9 +352,17 @@ export function ChatAssistant({ isOpen, onClose }: ChatAssistantProps) {
                               </p>
                             )}
 
-                            {sug.youtubeUrl ? (
+                            {sug.id && !sug.id.startsWith('curated-') ? (
                               <button
-                                onClick={() => handleAddVideoFromChat(sug.youtubeUrl)}
+                                onClick={() => router.push(`/video/${sug.id}`)}
+                                className="mt-2 w-full py-1.5 px-3 neo-btn-primary text-white text-[11px] flex items-center justify-center gap-1"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5 text-[#B8FF3D]" />
+                                Open Lesson
+                              </button>
+                            ) : sug.youtube_url ? (
+                              <button
+                                onClick={() => handleAddVideoFromChat(sug.youtube_url)}
                                 disabled={isIngestingThis}
                                 className="mt-2 w-full py-1.5 px-3 neo-btn-lime text-[#111218] text-[11px] flex items-center justify-center gap-1.5 disabled:opacity-50"
                               >
@@ -300,14 +377,6 @@ export function ChatAssistant({ isOpen, onClose }: ChatAssistantProps) {
                                     Add & Segment Lesson
                                   </>
                                 )}
-                              </button>
-                            ) : sug.id ? (
-                              <button
-                                onClick={() => router.push(`/video/${sug.id}`)}
-                                className="mt-2 w-full py-1.5 px-3 neo-btn-primary text-white text-[11px] flex items-center justify-center gap-1"
-                              >
-                                <ExternalLink className="w-3.5 h-3.5 text-[#B8FF3D]" />
-                                Open Lesson
                               </button>
                             ) : null}
                           </div>
@@ -333,7 +402,7 @@ export function ChatAssistant({ isOpen, onClose }: ChatAssistantProps) {
             </div>
             <div className="p-3 bg-[#FFFDF7] text-[#111218] border-2 border-[#111218] shadow-neo-sm rounded-2xl rounded-tl-none flex items-center gap-2 font-medium">
               <Loader2 className="w-3.5 h-3.5 animate-spin text-[#111218]" />
-              <span>Analyzing curriculum & synthesizing answer...</span>
+              <span>Analyzing context & synthesizing answer...</span>
             </div>
           </div>
         )}
@@ -350,8 +419,9 @@ export function ChatAssistant({ isOpen, onClose }: ChatAssistantProps) {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          disabled={isLoading}
           placeholder="Ask Saras or paste a YouTube URL..."
-          className="flex-1 bg-[#FFFDF7] text-[#111218] border-2 border-[#111218] rounded-xl px-3.5 py-2 text-xs font-medium placeholder-slate-400 focus:outline-none focus:border-[#B8FF3D]"
+          className="flex-1 bg-[#FFFDF7] text-[#111218] border-2 border-[#111218] rounded-xl px-3.5 py-2 text-xs font-medium placeholder-slate-400 focus:outline-none focus:border-[#B8FF3D] disabled:opacity-50"
         />
         <button
           type="submit"
