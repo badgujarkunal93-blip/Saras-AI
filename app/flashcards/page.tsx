@@ -456,7 +456,7 @@ export default function FlashcardsStudioPage() {
                 </p>
               </div>
               <NextLink
-                href="/"
+                href="/discover"
                 className="neo-btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold"
               >
                 <span>Explore Lessons</span>

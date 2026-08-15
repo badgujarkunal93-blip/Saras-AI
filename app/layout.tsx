@@ -37,7 +37,7 @@ export default function RootLayout({
   const [isTasksOpen, setIsTasksOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-  const isLanding = pathname === '/landing' || pathname === '/welcome';
+  const isLanding = pathname === '/' || pathname === '/landing' || pathname === '/welcome';
 
   useEffect(() => {
     const handleOpenChat = () => setIsChatOpen(true);
@@ -51,8 +51,8 @@ export default function RootLayout({
   }, []);
 
   const navItems = [
-    { href: '/', label: 'Discover', icon: Compass },
-    { href: '/#explore-section', label: 'Explore Lessons', icon: BookOpen },
+    { href: '/discover', label: 'Discover', icon: Compass },
+    { href: '/discover#explore-section', label: 'Explore Lessons', icon: BookOpen },
     { href: '/exam', label: 'Exam Mode', icon: GraduationCap },
     { href: '/revision', label: 'AI Revision', icon: RotateCw },
     { href: '/knowledge', label: 'Knowledge Map', icon: Network },

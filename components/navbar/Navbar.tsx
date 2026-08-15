@@ -89,7 +89,7 @@ export function Navbar() {
   };
 
   const navLinks = [
-    { href: '/', label: 'Discover', icon: Compass },
+    { href: '/discover', label: 'Discover', icon: Compass },
     { href: '/flashcards', label: 'Flashcards', icon: Layers },
     { href: '/focus', label: 'Deep Focus', icon: Eye },
   ];
@@ -100,7 +100,7 @@ export function Navbar() {
         {/* Left: Brand Identity + Navigation */}
         <div className="flex items-center gap-7">
           {/* Logo */}
-          <NextLink href="/" className="flex items-center gap-2.5 group">
+          <NextLink href="/discover" className="flex items-center gap-2.5 group">
             <div className="w-8 h-8 rounded-lg bg-[#B8FF3D] border-2 border-[#111218] shadow-neo-sm flex items-center justify-center group-hover:-translate-y-0.5 group-hover:shadow-neo transition-all">
               <Sparkles className="w-4 h-4 text-[#111218] fill-[#111218]" />
             </div>

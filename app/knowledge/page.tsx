@@ -268,7 +268,7 @@ export default function KnowledgeMapPage() {
             </p>
           </div>
           <NextLink
-            href="/"
+            href="/discover"
             className="neo-btn-primary px-6 py-2.5 text-xs font-bold font-display inline-flex items-center gap-2"
           >
             <span>Explore Lessons</span>
@@ -429,7 +429,7 @@ export default function KnowledgeMapPage() {
           </div>
 
           <NextLink
-            href="/"
+            href="/discover"
             className="neo-btn-lime w-full py-2 text-xs font-bold font-display flex items-center justify-center gap-2"
           >
             <Sparkles className="w-3.5 h-3.5 text-[#111218]" />

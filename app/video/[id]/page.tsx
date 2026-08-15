@@ -201,7 +201,7 @@ export default function VideoDetailPage() {
         <h2 className="text-lg font-extrabold text-[#111218] font-display uppercase">Lesson Not Found</h2>
         <p className="text-xs text-[#636573] font-medium">The requested video course could not be loaded.</p>
         <NextLink
-          href="/"
+          href="/discover"
           className="neo-btn-primary inline-flex items-center gap-2 px-4 py-2 text-xs font-bold"
         >
           <ArrowLeft className="w-3.5 h-3.5 text-[#B8FF3D]" />
@@ -223,7 +223,7 @@ export default function VideoDetailPage() {
       {/* Top Header & Breadcrumb */}
       <div className="flex items-center justify-between pb-2">
         <NextLink
-          href="/"
+          href="/discover"
           className="neo-btn-outline inline-flex items-center gap-2 px-3 py-1.5 text-xs font-bold"
         >
           <ArrowLeft className="w-3.5 h-3.5" />

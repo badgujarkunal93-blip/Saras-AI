@@ -217,7 +217,7 @@ export default function SarasLandingPage() {
           {/* App Entry CTA */}
           <div className="flex items-center gap-3">
             <NextLink
-              href="/"
+              href="/discover"
               className="neo-btn-primary px-4 py-2 text-xs font-bold font-display uppercase flex items-center gap-1.5 shadow-neo-sm"
             >
               <span>Start Learning →</span>
@@ -257,7 +257,7 @@ export default function SarasLandingPage() {
 
             <div className="flex flex-wrap items-center gap-4 pt-2">
               <NextLink
-                href="/"
+                href="/discover"
                 className="neo-btn-primary px-7 py-3.5 text-sm font-black font-display uppercase flex items-center gap-2 shadow-neo hover:shadow-neo-lg"
               >
                 <span>Start Learning →</span>
@@ -340,7 +340,7 @@ export default function SarasLandingPage() {
                 </span>
               </div>
               <NextLink
-                href="/#explore-section"
+                href="/discover#explore-section"
                 className="neo-btn-primary px-4 py-2 text-xs font-bold font-display uppercase flex items-center gap-1.5 flex-shrink-0"
               >
                 <span>Try In Live App →</span>
@@ -1024,7 +1024,7 @@ export default function SarasLandingPage() {
 
           <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
             <NextLink
-              href="/"
+              href="/discover"
               className="px-8 py-4 bg-[#111218] text-white hover:bg-black font-black font-display uppercase text-sm rounded-2xl border-2 border-[#111218] shadow-neo hover:shadow-neo-lg hover:-translate-y-0.5 transition-all flex items-center gap-2"
             >
               <span>Open Saras AI →</span>
