@@ -20,6 +20,7 @@ import {
   BookOpen,
   ListTodo,
   CheckCircle2,
+  Workflow,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
@@ -32,6 +33,8 @@ export default function RootLayout({
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isTasksOpen, setIsTasksOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  const isLanding = pathname === '/landing' || pathname === '/welcome';
 
   useEffect(() => {
     const handleOpenChat = () => setIsChatOpen(true);
@@ -49,6 +52,7 @@ export default function RootLayout({
     { href: '/#explore-section', label: 'Explore Lessons', icon: BookOpen },
     { href: '/flashcards', label: 'Flashcards Studio', icon: Layers },
     { href: '/focus', label: 'Deep Focus', icon: Eye },
+    { href: '/landing', label: 'AI Architecture', icon: Workflow },
   ];
 
   return (
@@ -65,19 +69,23 @@ export default function RootLayout({
         {/* Subtle Interactive Paper Dot Grid Background Layer */}
         <InteractiveGridBackground />
 
-        {/* Top Navbar */}
-        <div className="relative z-40">
-          <Navbar />
-        </div>
+        {isLanding ? (
+          <main className="w-full flex-1 relative z-10">{children}</main>
+        ) : (
+          <>
+            {/* Top Navbar */}
+            <div className="relative z-40">
+              <Navbar />
+            </div>
 
-        {/* Main Workspace Layout */}
-        <div className="flex-1 flex max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 gap-6 relative z-10">
-          {/* Editorial Neo-Brutalist Sidebar */}
-          <aside
-            className={`hidden md:flex flex-col transition-all duration-200 flex-shrink-0 ${
-              isSidebarCollapsed ? 'w-16' : 'w-60'
-            }`}
-          >
+            {/* Main Workspace Layout */}
+            <div className="flex-1 flex max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 gap-6 relative z-10">
+              {/* Editorial Neo-Brutalist Sidebar */}
+              <aside
+                className={`hidden md:flex flex-col transition-all duration-200 flex-shrink-0 ${
+                  isSidebarCollapsed ? 'w-16' : 'w-60'
+                }`}
+              >
             <div className="bg-[#FFFDF7] border-2 border-[#111218] rounded-2xl p-3.5 flex flex-col h-full sticky top-20 max-h-[calc(100vh-6.5rem)] shadow-neo space-y-4">
               {/* Header & Collapse Toggle */}
               <div className="flex items-center justify-between pb-2.5 border-b-2 border-[#111218]/10">
@@ -180,6 +188,8 @@ export default function RootLayout({
 
         {/* Study Goals & Tasks Modal */}
         <TasksPanel isOpen={isTasksOpen} onClose={() => setIsTasksOpen(false)} />
+          </>
+        )}
       </body>
     </html>
   );
