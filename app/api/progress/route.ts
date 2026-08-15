@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId') || 'default_user';
+    const userId = req.headers.get('x-user-id') || searchParams.get('userId') || 'default_user';
 
     const userProgress = await db.userVideoProgress.findMany({
       where: { user_id: userId },
@@ -48,12 +48,8 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    if (streakDays === 0 && sortedDates.length > 0) {
-      streakDays = 1;
-    }
-
     return NextResponse.json({
-      streakDays: Math.max(1, streakDays),
+      streakDays,
       totalWatchedLessons: userProgress.length,
       activityDates: Array.from(activityDates),
     });

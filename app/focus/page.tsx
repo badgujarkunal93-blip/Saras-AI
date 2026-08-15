@@ -259,8 +259,10 @@ export default function DeepFocusPage() {
     stopCamera();
     const finalScore =
       totalTicks > 0
-        ? Math.max(70, Math.min(100, Math.round((focusedTicks / totalTicks) * 100)))
-        : 95;
+        ? Math.min(100, Math.max(0, Math.round((focusedTicks / totalTicks) * 100)))
+        : lookAwayCount > 0
+        ? 0
+        : 100;
 
     const newSession: CompletedSession = {
       id: 'sess-' + Date.now(),
@@ -269,7 +271,7 @@ export default function DeepFocusPage() {
       focusScore: finalScore,
       lookAways: lookAwayCount,
       lessonTitle: selectedLesson,
-      quality: finalScore >= 90 ? 'Excellent' : finalScore >= 80 ? 'Good' : 'Fair',
+      quality: finalScore >= 85 ? 'Excellent' : finalScore >= 60 ? 'Good' : 'Fair',
     };
 
     setCompletedSessions((prev) => {
@@ -297,8 +299,10 @@ export default function DeepFocusPage() {
   const progressFraction = (totalSessionSeconds - secondsRemaining) / totalSessionSeconds;
   const currentFocusScore =
     totalTicks > 0
-      ? Math.max(70, Math.min(100, Math.round((focusedTicks / totalTicks) * 100)))
-      : 96;
+      ? Math.min(100, Math.max(0, Math.round((focusedTicks / totalTicks) * 100)))
+      : lookAwayCount > 0
+      ? 0
+      : 100;
 
   // SVG Circular Ring Math
   const ringCircumference = 2 * Math.PI * 36;

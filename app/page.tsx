@@ -176,7 +176,9 @@ function getVideoProgressInfo(v: DBVideo) {
   const isCompleted = total > 0 && completedCount >= total;
   const percent = isCompleted
     ? 100
-    : Math.min(99, Math.max(10, Math.round((completedCount / total) * 100)));
+    : total > 0
+    ? Math.round((completedCount / total) * 100)
+    : 0;
 
   const curIdx = prog.current_segment_index || 0;
   const currentChapterTitle = v.segments?.[curIdx]?.title || `Part ${curIdx + 1}`;

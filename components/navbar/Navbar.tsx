@@ -28,7 +28,7 @@ export function Navbar() {
     type: 'idle' | 'success' | 'error';
     message?: string;
   }>({ type: 'idle' });
-  const [streakDays, setStreakDays] = useState<number>(1);
+  const [streakDays, setStreakDays] = useState<number>(0);
 
   React.useEffect(() => {
     const fetchStreak = async () => {
