@@ -1,0 +1,120 @@
+// Prisma Schema for Learnly Platform
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Video {
+  id               String              @id @default(cuid())
+  youtube_video_id String              @unique
+  title            String
+  channel          String              @default("YouTube Creator")
+  duration_seconds Int                 @default(0)
+  thumbnail_url    String?
+  status           String              @default("processing") // 'processing' | 'ready' | 'failed'
+  error_reason     String?
+  created_at       DateTime            @default(now())
+
+  segments         Segment[]
+  flashcards       Flashcard[]
+  progress         UserVideoProgress[]
+  tasks            Task[]
+  attention_events AttentionEvent[]
+
+  @@index([youtube_video_id])
+}
+
+model Segment {
+  id               String           @id @default(cuid())
+  video_id         String
+  video            Video            @relation(fields: [video_id], references: [id], onDelete: Cascade)
+  order_index      Int
+  title            String
+  summary          String?
+  start_seconds    Int
+  end_seconds      Int
+
+  quiz_questions   QuizQuestion[]
+  attention_events AttentionEvent[]
+
+  @@index([video_id])
+}
+
+model QuizQuestion {
+  id             String   @id @default(cuid())
+  segment_id     String
+  segment        Segment  @relation(fields: [segment_id], references: [id], onDelete: Cascade)
+  question       String
+  options        String   // JSON string of array of string options: ["A", "B", "C", "D"]
+  correct_answer String
+  explanation    String?
+
+  @@index([segment_id])
+}
+
+model Flashcard {
+  id         String   @id @default(cuid())
+  video_id   String
+  video      Video    @relation(fields: [video_id], references: [id], onDelete: Cascade)
+  front      String
+  back       String
+  mastered   Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  @@index([video_id])
+}
+
+model UserVideoProgress {
+  id                    String   @id @default(cuid())
+  user_id               String   @default("default_user")
+  video_id              String
+  video                 Video    @relation(fields: [video_id], references: [id], onDelete: Cascade)
+  current_segment_index Int      @default(0)
+  completed_segment_ids String   @default("[]") // JSON string array of segment ids
+  last_watched_at       DateTime @default(now())
+
+  @@unique([user_id, video_id])
+  @@index([video_id])
+}
+
+model Task {
+  id              String   @id @default(cuid())
+  user_id         String   @default("default_user")
+  label           String
+  done            Boolean  @default(false)
+  linked_video_id String?
+  linked_video    Video?   @relation(fields: [linked_video_id], references: [id], onDelete: SetNull)
+  created_at      DateTime @default(now())
+
+  @@index([user_id])
+}
+
+model AttentionEvent {
+  id         String   @id @default(cuid())
+  user_id    String   @default("default_user")
+  video_id   String?
+  video      Video?   @relation(fields: [video_id], references: [id], onDelete: Cascade)
+  segment_id String?
+  segment    Segment? @relation(fields: [segment_id], references: [id], onDelete: SetNull)
+  event_type String   // 'looked_away' | 'resumed' | 'no_face'
+  created_at DateTime @default(now())
+
+  @@index([video_id])
+  @@index([user_id])
+}
+
+model ChatMessage {
+  id                  String   @id @default(cuid())
+  user_id             String   @default("default_user")
+  role                String   // 'user' | 'assistant'
+  content             String
+  suggested_video_ids String?  // JSON string array of video ids or youtube metadata
+  created_at          DateTime @default(now())
+
+  @@index([user_id])
+}
