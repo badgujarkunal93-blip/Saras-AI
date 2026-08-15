@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import NextLink from 'next/link';
 import {
   Sparkles,
@@ -30,20 +30,26 @@ import {
   Workflow,
   Share2,
   ExternalLink,
+  GraduationCap,
+  Hammer,
+  Network,
+  RotateCcw,
+  SlidersHorizontal,
+  FolderGit2,
 } from 'lucide-react';
 
 export default function SarasLandingPage() {
-  const [activePipelineNode, setActivePipelineNode] = useState<string | null>('segmentation');
+  const [activePipelineStage, setActivePipelineStage] = useState<string>('knowledge');
   const [activeLoopStep, setActiveLoopStep] = useState<number>(0);
   const [simulationState, setSimulationState] = useState<'idle' | 'running' | 'completed'>('idle');
   const [simStep, setSimStep] = useState<number>(0);
   const [simUrl, setSimUrl] = useState<string>('https://www.youtube.com/watch?v=kqtD5dpn9C8');
 
-  // Loop through learning loop steps automatically
+  // Loop through signature learning loop steps automatically
   useEffect(() => {
     const interval = setInterval(() => {
-      setActiveLoopStep((prev) => (prev + 1) % 6);
-    }, 2800);
+      setActiveLoopStep((prev) => (prev + 1) % 8);
+    }, 2400);
     return () => clearInterval(interval);
   }, []);
 
@@ -53,60 +59,112 @@ export default function SarasLandingPage() {
     setSimulationState('running');
     setSimStep(1);
 
-    setTimeout(() => setSimStep(2), 1200);
-    setTimeout(() => setSimStep(3), 2400);
-    setTimeout(() => setSimStep(4), 3600);
+    setTimeout(() => setSimStep(2), 800);
+    setTimeout(() => setSimStep(3), 1600);
+    setTimeout(() => setSimStep(4), 2400);
+    setTimeout(() => setSimStep(5), 3200);
+    setTimeout(() => setSimStep(6), 4000);
+    setTimeout(() => setSimStep(7), 4800);
     setTimeout(() => {
-      setSimStep(5);
+      setSimStep(8);
       setSimulationState('completed');
-    }, 4800);
+    }, 5600);
   };
 
-  const agentDetails: Record<
-    string,
-    { title: string; role: string; input: string; output: string; color: string; desc: string }
-  > = {
-    ingest: {
+  const agentCards = [
+    {
+      id: 'ingest',
       title: 'Ingestion Agent',
-      role: 'Source Processing',
-      input: 'YouTube URL / Video Stream',
-      output: 'Sanitized Transcript & Metadata',
+      badge: '01 / INPUT',
+      input: 'YouTube Video URL / Stream',
+      output: 'Clean Transcript & Chapters',
       color: '#B8FF3D',
-      desc: 'Extracts video ID, checks deterministic SQLite/Postgres cache, and pulls timestamped transcript tokens for downstream LLM processing.',
+      desc: 'Extracts video ID, checks deterministic SQLite/Prisma cache, and parses timestamped transcript tokens for downstream LLM processing.',
     },
-    segmentation: {
+    {
+      id: 'segment',
       title: 'Segmentation Agent',
-      role: 'Curriculum Structuring',
+      badge: '02 / STRUCTURE',
       input: 'Timestamped Transcript Stream',
-      output: 'Topic-Bounded Learning Chapters',
+      output: 'Topic-Bounded Learning Checkpoints',
       color: '#E9DFFF',
-      desc: 'Applies pedagogical prompt heuristics via Groq Cloud (LLaMA 3.3) to identify semantic topic boundaries, grouping raw captions into standalone chapters.',
+      desc: 'Applies pedagogical prompt heuristics to detect semantic topic transitions and partition raw video captions into structured chapters.',
     },
-    quiz: {
+    {
+      id: 'quiz',
       title: 'Quiz Agent',
-      role: 'Understanding Verification',
+      badge: '03 / VERIFY',
       input: 'Segment Transcript Slices',
       output: 'Grounded Checkpoint Quizzes',
       color: '#DCEEFF',
-      desc: 'Synthesizes 4-option diagnostic multiple-choice questions grounded strictly in the current video segment, preventing seeking until verified.',
+      desc: 'Synthesizes 4-option diagnostic multiple-choice questions strictly from the current video segment, gating progress until answered correctly.',
     },
-    recall: {
+    {
+      id: 'recall',
       title: 'Recall Agent',
-      role: 'Memory Retention Engine',
-      input: 'Video Transcript & Core Definitions',
+      badge: '04 / RETENTION',
+      input: 'Video Transcript & Terms',
       output: 'Spaced Repetition Flashcards',
       color: '#DDF6BD',
-      desc: 'Extracts essential conceptual definitions directly taught in the video and structures them into physical active recall study cards.',
+      desc: 'Extracts core definitions and active recall pairs directly taught in the video and structures them into persistent study decks.',
     },
-    focus: {
+    {
+      id: 'concept',
+      title: 'Concept Engine',
+      badge: '05 / GRAPH',
+      input: 'Processed Lesson Content',
+      output: 'Concepts + Prerequisite DAG',
+      color: '#B8FF3D',
+      desc: 'Identifies atomic technical concepts and extracts prerequisite and hierarchical relationships to construct a data-driven Knowledge Map.',
+    },
+    {
+      id: 'revision',
+      title: 'Revision Engine',
+      badge: '06 / ADAPTATION',
+      input: 'Mastery Scores + Past Mistakes',
+      output: 'Personalized Revision Session',
+      color: '#E9DFFF',
+      desc: 'Ranks revision candidates using a multi-factor priority formula (weakness, mistake frequency, age, recency) to curate focused study runs.',
+    },
+    {
+      id: 'exam',
+      title: 'Exam Planner',
+      badge: '07 / PLANNING',
+      input: 'Mastery + Target Date + Daily Budget',
+      output: 'Adaptive Multi-Day Roadmap',
+      color: '#FFE353',
+      desc: 'Applies topological sorting on concept prerequisites to build a strict daily study timetable that automatically replans upon performance changes.',
+    },
+    {
+      id: 'project',
+      title: 'Project Generator',
+      badge: '08 / APPLICATION',
+      input: 'Learned Concepts + Source Transcript',
+      output: 'Practical Project Milestone Spec',
+      color: '#FFD1C7',
+      desc: 'Transforms technical concepts actually taught in the video into a grounded software project roadmap with requirements and milestone tracking.',
+    },
+    {
+      id: 'focus',
       title: 'Deep Focus Engine',
-      role: 'Client-Side Attention Monitor',
-      input: 'Local Camera Stream (In-Browser)',
-      output: 'Playback State (Play / Auto-Pause)',
+      badge: 'MONITORING',
+      input: 'In-Browser Camera Stream',
+      output: 'Real-Time Attention Analytics',
       color: '#111218',
-      desc: 'Processes face landmarks completely on-device using MediaPipe & WebAssembly. Automatically pauses playback if cognitive drift or look-away exceeds 4 seconds.',
+      desc: 'Analyzes face landmarks entirely on-device with MediaPipe & WebAssembly. Automatically pauses playback if gaze leaves the viewport.',
     },
-  };
+  ];
+
+  const learningLoopSteps = [
+    { title: 'Watch', desc: 'Stream video chapters with timestamped captions' },
+    { title: 'Understand', desc: 'Read AI-synthesized Smart Notes with key definitions' },
+    { title: 'Verify', desc: 'Solve checkpoint quizzes before unlocking next part' },
+    { title: 'Recall', desc: 'Drill active recall cards with spaced repetition' },
+    { title: 'Connect', desc: 'Explore knowledge graph & prerequisite relationships' },
+    { title: 'Revise', desc: 'Run personalized revision sessions on weak concepts' },
+    { title: 'Apply', desc: 'Build grounded projects mapped directly to video skills' },
+    { title: 'Master', desc: 'Track readiness toward your exam target date' },
+  ];
 
   return (
     <div className="min-h-screen bg-[#F5F3EC] text-[#111218] selection:bg-[#B8FF3D] selection:text-[#111218]">
@@ -116,8 +174,8 @@ export default function SarasLandingPage() {
       <header className="sticky top-0 z-50 w-full bg-[#F5F3EC]/90 backdrop-blur-md border-b-2 border-[#111218] transition-all">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           {/* Brand Logo */}
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[#B8FF3D] border-2 border-[#111218] shadow-neo-sm flex items-center justify-center">
+          <NextLink href="/" className="flex items-center gap-3 group">
+            <div className="w-8 h-8 rounded-lg bg-[#B8FF3D] border-2 border-[#111218] shadow-neo-sm flex items-center justify-center group-hover:-translate-y-0.5 transition-transform">
               <Sparkles className="w-4 h-4 text-[#111218] fill-[#111218]" />
             </div>
             <span className="font-display font-black text-lg tracking-tight text-[#111218] flex items-center">
@@ -126,15 +184,24 @@ export default function SarasLandingPage() {
                 AI
               </span>
             </span>
-          </div>
+          </NextLink>
 
           {/* Navigation Links */}
-          <nav className="hidden md:flex items-center gap-6 text-xs font-bold font-display uppercase tracking-wider text-[#111218]">
-            <a href="#pipeline" className="hover:text-[#636573] transition-colors">
+          <nav className="hidden lg:flex items-center gap-5 text-[11px] font-bold font-display uppercase tracking-wider text-[#111218]">
+            <a href="#how-it-works" className="hover:text-[#636573] transition-colors">
               How It Works
             </a>
-            <a href="#architecture" className="hover:text-[#636573] transition-colors">
-              AI Architecture
+            <a href="#intelligence" className="hover:text-[#636573] transition-colors">
+              Intelligence
+            </a>
+            <a href="#knowledge-map" className="hover:text-[#636573] transition-colors">
+              Knowledge Map
+            </a>
+            <a href="#revision" className="hover:text-[#636573] transition-colors">
+              AI Revision
+            </a>
+            <a href="#exam-mode" className="hover:text-[#636573] transition-colors">
+              Exam Mode
             </a>
             <a href="#tech-stack" className="hover:text-[#636573] transition-colors">
               Tech Stack
@@ -149,269 +216,586 @@ export default function SarasLandingPage() {
 
           {/* App Entry CTA */}
           <div className="flex items-center gap-3">
-            <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#FFFDF7] border-2 border-[#111218] text-[10px] font-bold uppercase tracking-wider font-mono">
-              <span className="w-2 h-2 rounded-full bg-[#B8FF3D] animate-pulse border border-[#111218]" />
-              AI/ML Prototype
-            </span>
             <NextLink
               href="/"
-              className="neo-btn-primary px-4 py-2 text-xs font-bold font-display flex items-center gap-1.5"
+              className="neo-btn-primary px-4 py-2 text-xs font-bold font-display uppercase flex items-center gap-1.5 shadow-neo-sm"
             >
-              <span>Open Saras AI</span>
-              <ArrowRight className="w-3.5 h-3.5 text-[#B8FF3D]" />
+              <span>Start Learning →</span>
             </NextLink>
           </div>
         </div>
       </header>
 
       {/* ─────────────────────────────────────────────────────────────
-          2. HERO SECTION
+          2. HERO: "TURN ANY VIDEO INTO A PERSONAL LEARNING SYSTEM"
       ───────────────────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-20 relative">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-          {/* Left Hero Typography */}
-          <div className="lg:col-span-7 space-y-6 text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#B8FF3D] border-2 border-[#111218] rounded-md shadow-neo-sm">
-              <Workflow className="w-3.5 h-3.5 text-[#111218]" />
-              <span className="text-xs font-black font-display uppercase tracking-wider text-[#111218]">
-                Modular Multi-Agent Learning System
+      <section className="relative overflow-hidden pt-12 pb-20 border-b-2 border-[#111218]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+          <div className="max-w-4xl space-y-5">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#FFFDF7] border-2 border-[#111218] rounded-full shadow-neo-sm">
+              <span className="w-2 h-2 rounded-full bg-[#B8FF3D] border border-[#111218] animate-pulse" />
+              <span className="text-[11px] font-bold font-mono uppercase tracking-widest text-[#111218]">
+                AI-Powered Active Learning Platform
               </span>
             </div>
 
-            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-[#111218] font-display tracking-tight leading-[0.98] uppercase">
-              Turn Any <br />
-              <span className="bg-[#B8FF3D] px-3 py-0.5 rounded-xl border-2 border-[#111218] shadow-neo-sm inline-block my-1">
+            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black font-display uppercase tracking-tight text-[#111218] leading-[1.05]">
+              Turn Any{' '}
+              <span className="bg-[#B8FF3D] px-2 py-0.5 border-2 border-[#111218] shadow-neo-sm inline-block">
                 Video
               </span>{' '}
-              Into A <br />
-              Learning System.
+              Into A Personal{' '}
+              <span className="bg-[#E9DFFF] px-2 py-0.5 border-2 border-[#111218] shadow-neo-sm inline-block">
+                Learning
+              </span>{' '}
+              System.
             </h1>
 
-            <p className="text-base sm:text-lg text-[#636573] font-medium leading-relaxed max-w-xl">
-              Saras AI transforms passive long-form educational videos into segmented lessons, checkpoint quizzes,
-              grounded recall cards, and distraction-free deep focus.
+            <p className="text-base sm:text-lg text-[#21232C] font-medium max-w-2xl leading-relaxed">
+              Saras AI transforms educational content into structured lessons, grounded recall, personalized knowledge maps, adaptive revision, exam plans, and practical projects.
             </p>
 
             <div className="flex flex-wrap items-center gap-4 pt-2">
               <NextLink
                 href="/"
-                className="neo-btn-primary px-6 py-3.5 text-sm font-bold font-display flex items-center gap-2 shadow-neo hover:shadow-neo-lg"
+                className="neo-btn-primary px-7 py-3.5 text-sm font-black font-display uppercase flex items-center gap-2 shadow-neo hover:shadow-neo-lg"
               >
-                <span>Start Learning Now</span>
-                <ArrowRight className="w-4 h-4 text-[#B8FF3D]" />
+                <span>Start Learning →</span>
+                <Sparkles className="w-4 h-4 text-[#B8FF3D]" />
               </NextLink>
 
               <a
-                href="#architecture"
-                className="neo-btn-outline px-5 py-3.5 text-sm font-bold font-display flex items-center gap-2 bg-[#FFFDF7]"
+                href="#intelligence-loop"
+                className="neo-btn-outline px-6 py-3.5 text-sm font-bold font-display uppercase flex items-center gap-2"
               >
-                <span>Explore the AI Pipeline</span>
-                <ChevronDown className="w-4 h-4 text-[#111218]" />
+                <span>Explore the Intelligence ↓</span>
               </a>
-            </div>
-
-            {/* Quick Metrics Bar */}
-            <div className="grid grid-cols-3 gap-3 pt-6 border-t-2 border-[#111218]/15 max-w-lg">
-              <div>
-                <div className="text-xl sm:text-2xl font-black font-display text-[#111218]">100%</div>
-                <div className="text-[11px] font-bold text-[#636573] uppercase tracking-wider">Video Grounded</div>
-              </div>
-              <div>
-                <div className="text-xl sm:text-2xl font-black font-display text-[#111218]">Zero</div>
-                <div className="text-[11px] font-bold text-[#636573] uppercase tracking-wider">Bypass Seeking</div>
-              </div>
-              <div>
-                <div className="text-xl sm:text-2xl font-black font-display text-[#111218]">Local</div>
-                <div className="text-[11px] font-bold text-[#636573] uppercase tracking-wider">Private Attention</div>
-              </div>
             </div>
           </div>
 
-          {/* Right Hero Visual: Interactive Computational Graph */}
-          <div className="lg:col-span-5 relative">
-            <div className="bg-[#FFFDF7] border-2 border-[#111218] rounded-3xl p-6 shadow-neo-lg space-y-4 relative overflow-hidden">
-              {/* Header */}
-              <div className="flex items-center justify-between pb-3 border-b-2 border-[#111218]">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-[#B8FF3D] border border-[#111218]" />
-                  <span className="text-xs font-black font-display uppercase tracking-wider text-[#111218]">
-                    Pipeline Execution Graph
-                  </span>
-                </div>
-                <span className="text-[10px] font-mono text-[#636573] font-bold">60 FPS · Reactive</span>
+          {/* ─────────────────────────────────────────────────────────────
+              3. HERO VISUAL: THE SARAS INTELLIGENCE LOOP
+          ───────────────────────────────────────────────────────────── */}
+          <div
+            id="intelligence-loop"
+            className="bg-[#FFFDF7] border-2 border-[#111218] rounded-3xl p-6 sm:p-8 shadow-neo-lg space-y-6"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b-2 border-[#111218]">
+              <div className="space-y-0.5">
+                <span className="badge-black px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest font-mono">
+                  FULL SYSTEM ARCHITECTURE
+                </span>
+                <h3 className="text-lg sm:text-xl font-black font-display uppercase tracking-tight text-[#111218]">
+                  The Saras Intelligence Loop
+                </h3>
               </div>
+              <span className="text-xs font-mono font-bold text-[#636573]">
+                8 Connected Intelligence Layers
+              </span>
+            </div>
 
-              {/* Node Graph Visual */}
-              <div className="space-y-3 relative py-2">
-                {/* Node 1: Input Source */}
+            {/* Architecture Node DAG Flow */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+              {[
+                { stage: '1. Ingest', icon: Play, label: 'YouTube Video', color: 'bg-[#B8FF3D]' },
+                { stage: '2. Segment', icon: Workflow, label: 'Topic Chapters', color: 'bg-[#E9DFFF]' },
+                { stage: '3. Quiz', icon: CheckCircle2, label: 'Checkpoint Gating', color: 'bg-[#DCEEFF]' },
+                { stage: '4. Recall', icon: Layers, label: 'Flashcards', color: 'bg-[#DDF6BD]' },
+                { stage: '5. Graph', icon: Network, label: 'Knowledge Map', color: 'bg-[#B8FF3D]' },
+                { stage: '6. Revise', icon: RotateCw, label: 'Adaptive Recall', color: 'bg-[#E9DFFF]' },
+                { stage: '7. Exam', icon: GraduationCap, label: 'Study Roadmap', color: 'bg-[#FFE353]' },
+                { stage: '8. Build', icon: Hammer, label: 'Project Roadmap', color: 'bg-[#FFD1C7]' },
+              ].map((item, idx) => (
                 <div
-                  onMouseEnter={() => setActivePipelineNode('ingest')}
-                  className={`p-3 rounded-xl border-2 border-[#111218] transition-all cursor-pointer ${
-                    activePipelineNode === 'ingest'
-                      ? 'bg-[#B8FF3D] shadow-neo-sm translate-x-1'
-                      : 'bg-[#F5F3EC] hover:bg-[#FFFDF7]'
+                  key={idx}
+                  onClick={() => setActivePipelineStage(item.stage.split('.')[1].trim().toLowerCase())}
+                  className={`p-3 rounded-2xl border-2 border-[#111218] flex flex-col justify-between h-28 cursor-pointer transition-all shadow-neo-sm hover:-translate-y-1 hover:shadow-neo ${
+                    item.color
                   }`}
                 >
-                  <div className="flex items-center justify-between text-xs font-bold font-display">
-                    <span className="flex items-center gap-2">
-                      <Play className="w-3.5 h-3.5 text-[#111218]" />
-                      01. YouTube Input Source
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-mono font-black uppercase tracking-wider text-[#111218]">
+                      {item.stage}
                     </span>
-                    <span className="text-[10px] font-mono">Raw Transcript</span>
+                    <item.icon className="w-3.5 h-3.5 text-[#111218]" />
                   </div>
-                </div>
-
-                {/* Connecting Arrow */}
-                <div className="flex justify-center -my-1">
-                  <div className="w-0.5 h-4 bg-[#111218]" />
-                </div>
-
-                {/* Node 2: Segmentation Agent */}
-                <div
-                  onMouseEnter={() => setActivePipelineNode('segmentation')}
-                  className={`p-3 rounded-xl border-2 border-[#111218] transition-all cursor-pointer ${
-                    activePipelineNode === 'segmentation'
-                      ? 'bg-[#E9DFFF] shadow-neo-sm translate-x-1'
-                      : 'bg-[#F5F3EC] hover:bg-[#FFFDF7]'
-                  }`}
-                >
-                  <div className="flex items-center justify-between text-xs font-bold font-display">
-                    <span className="flex items-center gap-2">
-                      <Layers className="w-3.5 h-3.5 text-[#111218]" />
-                      02. Segmentation Agent
-                    </span>
-                    <span className="badge-black px-1.5 py-0.2 text-[9px]">LLaMA 3.3</span>
-                  </div>
-                </div>
-
-                {/* Branching Connector */}
-                <div className="flex justify-center -my-1">
-                  <div className="w-0.5 h-4 bg-[#111218]" />
-                </div>
-
-                {/* Parallel Nodes 3 & 4: Quiz + Recall */}
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div
-                    onMouseEnter={() => setActivePipelineNode('quiz')}
-                    className={`p-3 rounded-xl border-2 border-[#111218] transition-all cursor-pointer ${
-                      activePipelineNode === 'quiz'
-                        ? 'bg-[#DCEEFF] shadow-neo-sm translate-x-0.5'
-                        : 'bg-[#F5F3EC] hover:bg-[#FFFDF7]'
-                    }`}
-                  >
-                    <div className="text-[11px] font-bold font-display flex items-center gap-1.5">
-                      <ShieldCheck className="w-3 h-3 text-[#111218]" />
-                      03. Quiz Agent
-                    </div>
-                    <p className="text-[10px] text-[#636573] mt-1 font-medium">Checkpoint Gates</p>
-                  </div>
-
-                  <div
-                    onMouseEnter={() => setActivePipelineNode('recall')}
-                    className={`p-3 rounded-xl border-2 border-[#111218] transition-all cursor-pointer ${
-                      activePipelineNode === 'recall'
-                        ? 'bg-[#DDF6BD] shadow-neo-sm translate-x-0.5'
-                        : 'bg-[#F5F3EC] hover:bg-[#FFFDF7]'
-                    }`}
-                  >
-                    <div className="text-[11px] font-bold font-display flex items-center gap-1.5">
-                      <Sparkles className="w-3 h-3 text-[#111218]" />
-                      04. Recall Agent
-                    </div>
-                    <p className="text-[10px] text-[#636573] mt-1 font-medium">Spaced Cards</p>
-                  </div>
-                </div>
-
-                {/* Connecting Arrow */}
-                <div className="flex justify-center -my-1">
-                  <div className="w-0.5 h-4 bg-[#111218]" />
-                </div>
-
-                {/* Node 5: Deep Focus Loop */}
-                <div
-                  onMouseEnter={() => setActivePipelineNode('focus')}
-                  className={`p-3 rounded-xl border-2 border-[#111218] transition-all cursor-pointer ${
-                    activePipelineNode === 'focus'
-                      ? 'bg-[#111218] text-white shadow-neo-lime translate-x-1'
-                      : 'bg-[#F5F3EC] hover:bg-[#FFFDF7]'
-                  }`}
-                >
-                  <div className="flex items-center justify-between text-xs font-bold font-display">
-                    <span className="flex items-center gap-2">
-                      <Eye className={`w-3.5 h-3.5 ${activePipelineNode === 'focus' ? 'text-[#B8FF3D]' : 'text-[#111218]'}`} />
-                      05. Deep Focus Engine
-                    </span>
-                    <span
-                      className={`text-[9px] font-mono font-bold ${
-                        activePipelineNode === 'focus' ? 'text-[#B8FF3D]' : 'text-[#111218]'
-                      }`}
-                    >
-                      MediaPipe WASM
+                  <div className="space-y-0.5">
+                    <span className="text-xs font-black font-display uppercase tracking-tight text-[#111218] block leading-tight">
+                      {item.label}
                     </span>
                   </div>
+                  <div className="w-full h-1 bg-[#111218]/15 rounded-full overflow-hidden">
+                    <div className="h-full bg-[#111218] w-full" />
+                  </div>
                 </div>
+              ))}
+            </div>
+
+            {/* Pipeline Statement */}
+            <div className="p-4 rounded-2xl bg-[#F5F3EC] border-2 border-[#111218] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2.5 font-medium text-[#21232C]">
+                <Sparkles className="w-4 h-4 text-[#111218] flex-shrink-0" />
+                <span>
+                  <strong>Deterministic & Grounded:</strong> Every question, flashcard, and project milestone originates strictly from the video transcript and your verified mastery.
+                </span>
               </div>
-
-              {/* Active Inspector Card */}
-              {activePipelineNode && (
-                <div className="p-3.5 bg-[#F5F3EC] border-2 border-[#111218] rounded-2xl space-y-1 text-xs transition-all">
-                  <div className="flex items-center justify-between font-bold">
-                    <span className="font-display uppercase text-[#111218]">
-                      {agentDetails[activePipelineNode].title}
-                    </span>
-                    <span className="text-[10px] text-[#636573] font-mono">
-                      {agentDetails[activePipelineNode].role}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-[#636573] leading-snug">
-                    {agentDetails[activePipelineNode].desc}
-                  </p>
-                </div>
-              )}
+              <NextLink
+                href="/#explore-section"
+                className="neo-btn-primary px-4 py-2 text-xs font-bold font-display uppercase flex items-center gap-1.5 flex-shrink-0"
+              >
+                <span>Try In Live App →</span>
+              </NextLink>
             </div>
           </div>
         </div>
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
-          3. EDITORIAL STATEMENT: A VIDEO IS NOT A LESSON
+          4. FROM CONTENT TO MASTERY: 7 STAGE BREAKDOWN
       ───────────────────────────────────────────────────────────── */}
-      <section className="bg-[#111218] text-white py-20 border-y-2 border-[#111218] relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          <div className="max-w-3xl space-y-4">
-            <span className="badge-lime px-3 py-1 text-xs font-extrabold uppercase font-display">
-              Cognitive Science Principle
+      <section id="how-it-works" className="py-20 border-b-2 border-[#111218]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
+          <div className="max-w-3xl space-y-3">
+            <span className="badge-lime px-2.5 py-0.5 text-xs font-bold uppercase font-display">
+              Pedagogical Engine
             </span>
-            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black font-display uppercase tracking-tight leading-[1.05]">
-              A Video Is Not <br />
-              <span className="text-[#B8FF3D]">A Lesson.</span>
+            <h2 className="text-3xl sm:text-5xl font-black font-display uppercase tracking-tight text-[#111218]">
+              From Content to Mastery
             </h2>
-            <p className="text-base text-slate-300 font-medium leading-relaxed">
-              Passive video viewing creates the illusion of competence: 80% of information is lost within 48 hours without
-              active retrieval. Saras AI converts passive streams into an active comprehension loop.
+            <p className="text-sm sm:text-base text-[#636573] font-medium leading-relaxed">
+              Watching a video is passive. Saras wraps video content into an active, verified loop: Watch → Understand → Verify → Remember → Connect → Revise → Prepare → Build.
             </p>
           </div>
 
-          {/* 5-Stage Active Retrieval Flow */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-            {[
-              { step: '01', title: 'WATCH', desc: 'Engage with segmented concepts without forward seeking bypass.' },
-              { step: '02', title: 'UNDERSTAND', desc: 'Digest structured chapters with clean semantic summaries.' },
-              { step: '03', title: 'ANSWER', desc: 'Clear grounded checkpoint questions to unlock upcoming parts.' },
-              { step: '04', title: 'RECALL', desc: 'Commit definitions to memory with physical flashcard ratings.' },
-              { step: '05', title: 'MASTER', desc: 'Sustain distraction-free deep focus and track real progress.' },
-            ].map((st, i) => (
-              <div
-                key={st.step}
-                className="bg-[#21232C] border-2 border-white/10 hover:border-[#B8FF3D] rounded-2xl p-4 flex flex-col justify-between space-y-4 group transition-all"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono text-[#B8FF3D] font-bold">{st.step}</span>
-                  <span className="w-2 h-2 rounded-full bg-[#B8FF3D] opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="space-y-12">
+            {/* STAGE 01: SMART VIDEO INGESTION */}
+            <div className="bg-[#FFFDF7] border-2 border-[#111218] rounded-3xl p-6 sm:p-8 shadow-neo grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+              <div className="space-y-4">
+                <span className="text-xs font-mono font-black uppercase tracking-widest text-[#636573]">
+                  STAGE 01
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-black font-display uppercase tracking-tight text-[#111218]">
+                  01 / Turn a Video Into Structure
+                </h3>
+                <p className="text-xs sm:text-sm text-[#21232C] font-medium leading-relaxed">
+                  Paste any YouTube URL and Saras transforms the raw caption stream into meaningful topic chapters with timestamp boundaries, caching them permanently for deterministic recall.
+                </p>
+                <div className="flex items-center gap-2 pt-2">
+                  <span className="badge-black px-2.5 py-0.5 text-[10px] font-bold uppercase font-mono">
+                    Groq LLaMA 3.3 70B
+                  </span>
+                  <span className="badge-lime px-2.5 py-0.5 text-[10px] font-bold uppercase font-mono">
+                    Deterministic Cache
+                  </span>
                 </div>
+              </div>
+
+              {/* Visual Demo Card */}
+              <div className="bg-[#F5F3EC] border-2 border-[#111218] rounded-2xl p-5 space-y-3 font-mono text-xs shadow-neo-sm">
+                <div className="flex items-center justify-between pb-2 border-b border-[#111218]/20 text-[10px] text-[#636573]">
+                  <span>RAW STREAM → CHAPTERS</span>
+                  <span>3Blue1Brown Neural Networks</span>
+                </div>
+                <div className="space-y-2">
+                  <div className="p-2.5 rounded-xl bg-[#FFFDF7] border border-[#111218] flex items-center justify-between">
+                    <span className="font-bold text-[#111218]">Part 01: Foundations of Neurons</span>
+                    <span className="text-[10px] text-[#636573]">00:00 - 04:15</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-[#FFFDF7] border border-[#111218] flex items-center justify-between">
+                    <span className="font-bold text-[#111218]">Part 02: Layer Architecture & Weights</span>
+                    <span className="text-[10px] text-[#636573]">04:15 - 09:30</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-[#FFFDF7] border border-[#111218] flex items-center justify-between">
+                    <span className="font-bold text-[#111218]">Part 03: Activation & Matrix Math</span>
+                    <span className="text-[10px] text-[#636573]">09:30 - 15:45</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* STAGE 02: CHECKPOINT LEARNING & QUIZ GATING */}
+            <div className="bg-[#FFFDF7] border-2 border-[#111218] rounded-3xl p-6 sm:p-8 shadow-neo grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+              <div className="space-y-4">
+                <span className="text-xs font-mono font-black uppercase tracking-widest text-[#636573]">
+                  STAGE 02
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-black font-display uppercase tracking-tight text-[#111218]">
+                  02 / Don&apos;t Just Watch. Verify.
+                </h3>
+                <p className="text-xs sm:text-sm text-[#21232C] font-medium leading-relaxed">
+                  Saras automatically pauses playback at chapter boundaries and challenges you with diagnostic checkpoint questions. Future video chapters remain locked until understanding is verified.
+                </p>
+                <div className="flex items-center gap-2 pt-2">
+                  <span className="badge-black px-2.5 py-0.5 text-[10px] font-bold uppercase font-mono">
+                    Gated Player
+                  </span>
+                  <span className="badge-lime px-2.5 py-0.5 text-[10px] font-bold uppercase font-mono">
+                    Zero Seek Bypass
+                  </span>
+                </div>
+              </div>
+
+              {/* Visual Demo Card */}
+              <div className="bg-[#FFFDF7] border-2 border-[#111218] rounded-2xl p-5 space-y-3 shadow-neo-sm">
+                <div className="flex items-center justify-between pb-2 border-b-2 border-[#111218]">
+                  <span className="badge-black px-2 py-0.5 text-[9px] font-mono font-bold">
+                    CHECKPOINT 01 / VERIFICATION
+                  </span>
+                  <span className="text-xs font-bold text-red-800 flex items-center gap-1">
+                    <Lock className="w-3 h-3" /> Locked
+                  </span>
+                </div>
+                <p className="text-xs font-bold text-[#111218]">
+                  What role does an activation function serve in an artificial neuron?
+                </p>
+                <div className="space-y-1.5 text-xs">
+                  <div className="p-2 rounded-xl bg-[#F5F3EC] border border-[#111218]/30 font-medium">
+                    A. Increases physical RAM usage
+                  </div>
+                  <div className="p-2 rounded-xl bg-[#B8FF3D] border-2 border-[#111218] font-bold text-[#111218] flex items-center justify-between">
+                    <span>B. Introduces non-linearity to the network</span>
+                    <Check className="w-3.5 h-3.5 text-[#111218]" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* STAGE 03: SMART NOTES + RECALL FLASHCARDS */}
+            <div className="bg-[#FFFDF7] border-2 border-[#111218] rounded-3xl p-6 sm:p-8 shadow-neo grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+              <div className="space-y-4">
+                <span className="text-xs font-mono font-black uppercase tracking-widest text-[#636573]">
+                  STAGE 03
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-black font-display uppercase tracking-tight text-[#111218]">
+                  03 / Turn Watching Into Memory
+                </h3>
+                <p className="text-xs sm:text-sm text-[#21232C] font-medium leading-relaxed">
+                  Every video generates persistent Smart Notes organized into Overview, Key Concepts, Definitions, and Common Mistakes alongside interactive spaced repetition flashcard decks.
+                </p>
+              </div>
+
+              {/* Side by Side Modules */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="p-4 rounded-2xl bg-[#F5F3EC] border-2 border-[#111218] space-y-2 shadow-neo-sm">
+                  <span className="badge-black px-2 py-0.5 text-[9px] font-mono font-bold">
+                    SMART NOTES
+                  </span>
+                  <h5 className="text-xs font-black uppercase font-display text-[#111218]">
+                    Key Concepts & Takeaways
+                  </h5>
+                  <p className="text-[11px] text-[#636573] leading-snug">
+                    Synthesized key definitions linked directly to source video timestamps.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-[#E9DFFF] border-2 border-[#111218] space-y-2 shadow-neo-sm">
+                  <span className="badge-black px-2 py-0.5 text-[9px] font-mono font-bold">
+                    FLASHCARDS
+                  </span>
+                  <h5 className="text-xs font-black uppercase font-display text-[#111218]">
+                    Active Spaced Recall
+                  </h5>
+                  <p className="text-[11px] text-[#21232C] leading-snug font-medium">
+                    Drill definitions, toggle mastery, and review cards directly in Flashcards Studio.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* STAGE 04: KNOWLEDGE MAP */}
+            <div id="knowledge-map" className="bg-[#FFFDF7] border-2 border-[#111218] rounded-3xl p-6 sm:p-8 shadow-neo grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+              <div className="space-y-4">
+                <span className="text-xs font-mono font-black uppercase tracking-widest text-[#636573]">
+                  STAGE 04
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-black font-display uppercase tracking-tight text-[#111218]">
+                  04 / See What You Actually Know
+                </h3>
+                <p className="text-xs sm:text-sm text-[#21232C] font-medium leading-relaxed">
+                  Saras connects concepts across all your completed lessons into an interactive, hierarchical Knowledge Map. Colors clearly reflect your verified retention: Lime for Mastered, Lavender for Developing, Coral for Needs Review, and Cream for Not Studied.
+                </p>
+                <div className="pt-2">
+                  <NextLink
+                    href="/knowledge"
+                    className="neo-btn-primary px-5 py-2.5 text-xs font-bold font-display uppercase inline-flex items-center gap-1.5 shadow-neo-sm"
+                  >
+                    <span>Explore Knowledge Map →</span>
+                  </NextLink>
+                </div>
+              </div>
+
+              {/* Visual Knowledge Tree */}
+              <div className="bg-[#F5F3EC] border-2 border-[#111218] rounded-2xl p-5 space-y-3 shadow-neo-sm">
+                <div className="flex items-center justify-between text-[10px] font-mono font-bold text-[#636573] pb-2 border-b border-[#111218]/20">
+                  <span>HIERARCHICAL DOMAIN CLUSTER</span>
+                  <span>MACHINE LEARNING</span>
+                </div>
+                <div className="space-y-2">
+                  <div className="p-2.5 rounded-xl bg-[#B8FF3D] border-2 border-[#111218] flex items-center justify-between text-xs font-bold text-[#111218]">
+                    <span>Artificial Neuron</span>
+                    <span className="text-[10px]">90% · MASTERED</span>
+                  </div>
+                  <div className="flex justify-center">
+                    <span className="text-[#111218] text-xs">↓</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-[#E9DFFF] border-2 border-[#111218] flex items-center justify-between text-xs font-bold text-[#111218]">
+                    <span>Activation Function</span>
+                    <span className="text-[10px]">65% · DEVELOPING</span>
+                  </div>
+                  <div className="flex justify-center">
+                    <span className="text-[#111218] text-xs">↓</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-[#FFD1C7] border-2 border-[#111218] flex items-center justify-between text-xs font-bold text-red-950">
+                    <span>Backpropagation & Loss</span>
+                    <span className="text-[10px]">35% · NEEDS REVIEW</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* STAGE 05: AI REVISION SESSIONS */}
+            <div id="revision" className="bg-[#FFFDF7] border-2 border-[#111218] rounded-3xl p-6 sm:p-8 shadow-neo grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+              <div className="space-y-4">
+                <span className="text-xs font-mono font-black uppercase tracking-widest text-[#636573]">
+                  STAGE 05
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-black font-display uppercase tracking-tight text-[#111218]">
+                  05 / Saras Chooses What You Should Revise
+                </h3>
+                <p className="text-xs sm:text-sm text-[#21232C] font-medium leading-relaxed">
+                  Start an adaptive revision session and Saras automatically curates questions targeting weak concepts, recent mistakes, and older material using a deterministic ranking formula.
+                </p>
+                <div className="pt-2">
+                  <NextLink
+                    href="/revision"
+                    className="neo-btn-lime px-5 py-2.5 text-xs font-bold font-display uppercase inline-flex items-center gap-1.5 shadow-neo-sm"
+                  >
+                    <span>Launch AI Revision →</span>
+                  </NextLink>
+                </div>
+              </div>
+
+              {/* Visual Revision Card */}
+              <div className="bg-[#FFFDF7] border-2 border-[#111218] rounded-2xl p-5 space-y-3 shadow-neo-sm">
+                <div className="flex items-center justify-between pb-2 border-b-2 border-[#111218]">
+                  <span className="badge-black px-2.5 py-0.5 text-[9px] font-mono font-bold">
+                    SMART MIX · 10 ITEMS
+                  </span>
+                  <span className="text-[10px] font-mono font-bold text-emerald-800">
+                    Auto-Recoverable
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                  <div className="p-2 rounded-xl bg-[#FFD1C7] border border-[#111218]">
+                    <span className="text-[10px] text-red-900 block font-mono">Weak Areas</span>
+                    <span className="font-extrabold text-red-950">4 items</span>
+                  </div>
+                  <div className="p-2 rounded-xl bg-[#E9DFFF] border border-[#111218]">
+                    <span className="text-[10px] text-[#636573] block font-mono">Recent</span>
+                    <span className="font-extrabold text-[#111218]">3 items</span>
+                  </div>
+                  <div className="p-2 rounded-xl bg-[#DDF6BD] border border-[#111218]">
+                    <span className="text-[10px] text-[#21232C] block font-mono">Review</span>
+                    <span className="font-extrabold text-[#111218]">3 items</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* STAGE 06: ADAPTIVE EXAM MODE */}
+            <div id="exam-mode" className="bg-[#FFFDF7] border-2 border-[#111218] rounded-3xl p-6 sm:p-8 shadow-neo grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+              <div className="space-y-4">
+                <span className="text-xs font-mono font-black uppercase tracking-widest text-[#636573]">
+                  STAGE 06
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-black font-display uppercase tracking-tight text-[#111218]">
+                  06 / Turn Knowledge Into a Study Plan
+                </h3>
+                <p className="text-xs sm:text-sm text-[#21232C] font-medium leading-relaxed">
+                  Tell Saras what you&apos;re preparing for, when your exam is, and how much time you have. Saras topologically schedules prerequisites first, guarantees daily time budgets, and dynamically replans if mistakes occur.
+                </p>
+                <div className="pt-2">
+                  <NextLink
+                    href="/exam"
+                    className="neo-btn-primary px-5 py-2.5 text-xs font-bold font-display uppercase inline-flex items-center gap-1.5 shadow-neo-sm"
+                  >
+                    <span>Create Exam Plan →</span>
+                  </NextLink>
+                </div>
+              </div>
+
+              {/* Visual Exam Card */}
+              <div className="bg-[#FFFDF7] border-2 border-[#111218] rounded-2xl p-5 space-y-3 shadow-neo-sm">
+                <div className="flex items-center justify-between pb-2 border-b-2 border-[#111218]">
+                  <div>
+                    <h5 className="text-xs font-black font-display uppercase text-[#111218]">
+                      Machine Learning Midterm
+                    </h5>
+                    <span className="text-[10px] text-[#636573] font-mono">7 Days Remaining · 60m / Day</span>
+                  </div>
+                  <span className="badge-lime px-2 py-0.5 text-[9px] font-bold">
+                    68% READY
+                  </span>
+                </div>
+                <div className="space-y-1.5 text-xs">
+                  <div className="p-2 rounded-xl bg-[#F5F3EC] border border-[#111218] flex items-center justify-between">
+                    <span className="font-bold text-[#111218]">Day 1: Learn Neural Foundations (30m)</span>
+                    <span className="text-[10px] text-emerald-700 font-bold">✓ Done</span>
+                  </div>
+                  <div className="p-2 rounded-xl bg-[#FFFDF7] border border-[#111218] flex items-center justify-between">
+                    <span className="font-bold text-[#111218]">Day 2: AI Revision on Activations (30m)</span>
+                    <span className="text-[10px] text-[#636573]">Pending</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* STAGE 07: BUILD PROJECT GENERATOR */}
+            <div className="bg-[#FFFDF7] border-2 border-[#111218] rounded-3xl p-6 sm:p-8 shadow-neo grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+              <div className="space-y-4">
+                <span className="text-xs font-mono font-black uppercase tracking-widest text-[#636573]">
+                  STAGE 07
+                </span>
+                <h3 className="text-2xl sm:text-3xl font-black font-display uppercase tracking-tight text-[#111218]">
+                  07 / Learn Something. Then Build It.
+                </h3>
+                <p className="text-xs sm:text-sm text-[#21232C] font-medium leading-relaxed">
+                  When a technical video concludes, Saras transforms the concepts into an actionable software project with requirements and milestone tracking grounded directly in taught skills.
+                </p>
+                <div className="flex items-center gap-2 pt-1 text-[10px] font-mono text-[#636573]">
+                  <span className="badge-black px-2 py-0.5 text-[9px] font-bold">
+                    Grounded Skills
+                  </span>
+                  <span>Grounded in video concepts</span>
+                </div>
+              </div>
+
+              {/* Visual Project Spec */}
+              <div className="bg-[#F5F3EC] border-2 border-[#111218] rounded-2xl p-5 space-y-2.5 shadow-neo-sm">
+                <div className="flex items-center justify-between pb-2 border-b border-[#111218]/20">
+                  <span className="badge-black px-2 py-0.5 text-[9px] font-mono font-bold">
+                    PROJECT ROADMAP
+                  </span>
+                  <span className="text-[10px] font-mono font-bold text-[#111218]">
+                    Intermediate
+                  </span>
+                </div>
+                <h4 className="text-xs font-black font-display uppercase text-[#111218]">
+                  Neural Network Simulator in Python
+                </h4>
+                <div className="flex flex-wrap gap-1 text-[9px] font-mono font-bold">
+                  <span className="px-1.5 py-0.5 bg-[#B8FF3D] border border-[#111218] rounded">
+                    Matrix Representation
+                  </span>
+                  <span className="px-1.5 py-0.5 bg-[#E9DFFF] border border-[#111218] rounded">
+                    Activation Functions
+                  </span>
+                  <span className="px-1.5 py-0.5 bg-[#DCEEFF] border border-[#111218] rounded">
+                    Layer Architecture
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────
+          5. SIGNATURE ANIMATED LEARNING LOOP
+      ───────────────────────────────────────────────────────────── */}
+      <section className="py-20 border-b-2 border-[#111218] bg-[#FFFDF7]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-12">
+          <div className="max-w-2xl mx-auto space-y-3">
+            <span className="badge-lime px-2.5 py-0.5 text-xs font-bold uppercase font-display">
+              Continuous Loop
+            </span>
+            <h2 className="text-3xl sm:text-5xl font-black font-display uppercase tracking-tight text-[#111218]">
+              The Saras Learning Cycle
+            </h2>
+            <p className="text-xs sm:text-sm text-[#636573] font-medium">
+              Every lesson strengthens recall, updates your map, and powers personalized revision.
+            </p>
+          </div>
+
+          {/* Circular 8-Step Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3 max-w-6xl mx-auto">
+            {learningLoopSteps.map((step, idx) => (
+              <div
+                key={idx}
+                className={`p-3 rounded-2xl border-2 border-[#111218] flex flex-col justify-between h-32 text-left transition-all ${
+                  activeLoopStep === idx
+                    ? 'bg-[#B8FF3D] shadow-neo scale-105 z-10'
+                    : 'bg-[#F5F3EC] shadow-neo-sm opacity-80'
+                }`}
+              >
+                <span className="text-[10px] font-mono font-black uppercase text-[#111218]">
+                  0{idx + 1}
+                </span>
                 <div>
-                  <h4 className="text-sm font-extrabold font-display text-white uppercase">{st.title}</h4>
-                  <p className="text-[11px] text-slate-400 mt-1 leading-snug font-medium">{st.desc}</p>
+                  <h4 className="text-xs font-black font-display uppercase text-[#111218]">
+                    {step.title}
+                  </h4>
+                  <p className="text-[9px] text-[#21232C] leading-tight font-medium mt-0.5 line-clamp-2">
+                    {step.desc}
+                  </p>
+                </div>
+                <span className="text-[10px] font-bold text-[#111218]">→</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────
+          6. AGENT ARCHITECTURE & "WHY SPECIALIZED AGENTS?"
+      ───────────────────────────────────────────────────────────── */}
+      <section id="intelligence" className="py-20 border-b-2 border-[#111218]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
+          <div className="max-w-3xl space-y-3">
+            <span className="badge-black px-2.5 py-0.5 text-xs font-bold uppercase font-display text-white">
+              Multi-Agent System
+            </span>
+            <h2 className="text-3xl sm:text-5xl font-black font-display uppercase tracking-tight text-[#111218]">
+              Why Specialized Agents?
+            </h2>
+            <p className="text-sm sm:text-base text-[#636573] font-medium">
+              One unified pipeline with 8 distinct, deterministic jobs. Rather than relying on a single monolithic prompt, each agent solves one specific pedagogical task.
+            </p>
+          </div>
+
+          {/* 9 Agent Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {agentCards.map((agent) => (
+              <div
+                key={agent.id}
+                className="bg-[#FFFDF7] border-2 border-[#111218] rounded-3xl p-6 shadow-neo flex flex-col justify-between space-y-4 hover:-translate-y-1 transition-all"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between pb-2 border-b-2 border-[#111218]">
+                    <span className="badge-lime px-2 py-0.5 text-[9px] font-mono font-bold">
+                      {agent.badge}
+                    </span>
+                    <span className="text-[10px] font-mono font-bold text-[#636573]">
+                      LLaMA 3.3 70B
+                    </span>
+                  </div>
+
+                  <h3 className="text-lg font-black font-display uppercase text-[#111218]">
+                    {agent.title}
+                  </h3>
+
+                  <p className="text-xs text-[#21232C] font-medium leading-relaxed">
+                    {agent.desc}
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-xl bg-[#F5F3EC] border border-[#111218]/30 space-y-1 text-[10px] font-mono">
+                  <div className="text-[#636573]">
+                    <strong className="text-[#111218]">INPUT:</strong> {agent.input}
+                  </div>
+                  <div className="text-[#636573]">
+                    <strong className="text-[#111218]">OUTPUT:</strong> {agent.output}
+                  </div>
                 </div>
               </div>
             ))}
@@ -420,630 +804,253 @@ export default function SarasLandingPage() {
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
-          4. HOW SARAS AI WORKS (Step-by-Step Architecture)
+          7. LIVE PIPELINE SIMULATOR
       ───────────────────────────────────────────────────────────── */}
-      <section id="pipeline" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 space-y-12">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b-2 border-[#111218]">
-          <div className="space-y-2">
-            <span className="badge-black px-2.5 py-0.5 text-xs font-bold uppercase font-display">
-              Pipeline Workflow
+      <section className="py-20 border-b-2 border-[#111218] bg-[#FFFDF7]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+          <div className="max-w-3xl space-y-2">
+            <span className="badge-lime px-2.5 py-0.5 text-xs font-bold uppercase font-display">
+              Interactive Showcase
             </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-[#111218] font-display uppercase tracking-tight">
-              How Saras AI Works
-            </h2>
-          </div>
-          <p className="text-xs sm:text-sm text-[#636573] font-medium max-w-md">
-            Five specialized agents execute in sequence to convert raw video URLs into active learning environments.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Step 1: Ingest */}
-          <div className="bg-[#FFFDF7] border-2 border-[#111218] rounded-3xl p-6 shadow-neo flex flex-col justify-between space-y-5">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="badge-lime px-2.5 py-0.5 text-[10px] font-black uppercase">Step 01</span>
-                <span className="text-xs font-mono font-bold text-[#636573]">Video Ingestion</span>
-              </div>
-              <h3 className="text-lg font-extrabold text-[#111218] font-display uppercase">Ingest & Cache</h3>
-              <p className="text-xs text-[#636573] leading-relaxed font-medium">
-                Pulls full timestamped transcript subtitles via YouTube transcript parsers, checks local Prisma SQLite
-                cache, and prepares tokens.
-              </p>
-            </div>
-            <div className="p-3 bg-[#F5F3EC] rounded-xl border border-[#111218] text-[10px] font-mono text-[#111218] space-y-1">
-              <div>Input: <span className="font-bold text-[#111218]">YouTube URL</span></div>
-              <div>Output: <span className="font-bold text-[#111218]">Sanitized Transcripts</span></div>
-            </div>
-          </div>
-
-          {/* Step 2: Understand */}
-          <div className="bg-[#E9DFFF] border-2 border-[#111218] rounded-3xl p-6 shadow-neo flex flex-col justify-between space-y-5">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="badge-black px-2.5 py-0.5 text-[10px] font-black uppercase">Step 02</span>
-                <span className="text-xs font-mono font-bold text-[#21232C]">Segmentation Agent</span>
-              </div>
-              <h3 className="text-lg font-extrabold text-[#111218] font-display uppercase">Topic Segmentation</h3>
-              <p className="text-xs text-[#21232C] leading-relaxed font-medium">
-                Analyzes transcript narrative shifts to partition continuous 20–60 minute lectures into 3–6 focused
-                concept chapters with exact second bounds.
-              </p>
-            </div>
-            <div className="p-3 bg-[#FFFDF7] rounded-xl border border-[#111218] text-[10px] font-mono text-[#111218] space-y-1">
-              <div>Agent: <span className="font-bold">LLaMA 3.3 via Groq</span></div>
-              <div>Output: <span className="font-bold">Chapters with Timestamps</span></div>
-            </div>
-          </div>
-
-          {/* Step 3: Verify */}
-          <div className="bg-[#DCEEFF] border-2 border-[#111218] rounded-3xl p-6 shadow-neo flex flex-col justify-between space-y-5">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="badge-black px-2.5 py-0.5 text-[10px] font-black uppercase">Step 03</span>
-                <span className="text-xs font-mono font-bold text-[#21232C]">Quiz Agent</span>
-              </div>
-              <h3 className="text-lg font-extrabold text-[#111218] font-display uppercase">Gated Checkpoints</h3>
-              <p className="text-xs text-[#21232C] leading-relaxed font-medium">
-                Generates rigorous, video-grounded multiple-choice checkpoint tests. Students must pass the quiz to unlock
-                the next segment.
-              </p>
-            </div>
-            <div className="p-3 bg-[#FFFDF7] rounded-xl border border-[#111218] text-[10px] font-mono text-[#111218] space-y-1">
-              <div>Enforcement: <span className="font-bold">Player Seek Lock (200ms)</span></div>
-              <div>Status: <span className="font-bold text-[#111218]">100% Video Grounded</span></div>
-            </div>
-          </div>
-
-          {/* Step 4: Remember */}
-          <div className="bg-[#DDF6BD] border-2 border-[#111218] rounded-3xl p-6 shadow-neo flex flex-col justify-between space-y-5">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="badge-black px-2.5 py-0.5 text-[10px] font-black uppercase">Step 04</span>
-                <span className="text-xs font-mono font-bold text-[#21232C]">Recall Agent</span>
-              </div>
-              <h3 className="text-lg font-extrabold text-[#111218] font-display uppercase">Active Recall Decks</h3>
-              <p className="text-xs text-[#21232C] leading-relaxed font-medium">
-                Synthesizes physical flashcards directly from lecture transcript terms with self-rating spaced repetition
-                feedback (Forgot, Hard, Got it).
-              </p>
-            </div>
-            <div className="p-3 bg-[#FFFDF7] rounded-xl border border-[#111218] text-[10px] font-mono text-[#111218] space-y-1">
-              <div>Card Format: <span className="font-bold">Concept / Definition Pairs</span></div>
-              <div>Persistence: <span className="font-bold">SQLite / Prisma Store</span></div>
-            </div>
-          </div>
-
-          {/* Step 5: Focus */}
-          <div className="bg-[#111218] text-white border-2 border-[#111218] rounded-3xl p-6 shadow-neo-lg flex flex-col justify-between space-y-5">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="badge-lime px-2.5 py-0.5 text-[10px] font-black uppercase">Step 05</span>
-                <span className="text-xs font-mono font-bold text-slate-300">Focus Engine</span>
-              </div>
-              <h3 className="text-lg font-extrabold text-white font-display uppercase">Deep Focus Space</h3>
-              <p className="text-xs text-slate-300 leading-relaxed font-medium">
-                Client-side face mesh attention detection monitors eye gaze and head pose. Automatically pauses video on
-                cognitive drift.
-              </p>
-            </div>
-            <div className="p-3 bg-[#21232C] rounded-xl border border-white/10 text-[10px] font-mono text-slate-300 space-y-1">
-              <div>Privacy: <span className="font-bold text-[#B8FF3D]">100% Local In-Browser</span></div>
-              <div>Model: <span className="font-bold text-white">MediaPipe FaceLandmarker</span></div>
-            </div>
-          </div>
-
-          {/* Step 6: Companion */}
-          <div className="bg-[#FFFDF7] border-2 border-[#111218] rounded-3xl p-6 shadow-neo flex flex-col justify-between space-y-5">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="badge-lime px-2.5 py-0.5 text-[10px] font-black uppercase">Step 06</span>
-                <span className="text-xs font-mono font-bold text-[#636573]">Saras AI Companion</span>
-              </div>
-              <h3 className="text-lg font-extrabold text-[#111218] font-display uppercase">Interactive Copilot</h3>
-              <p className="text-xs text-[#636573] leading-relaxed font-medium">
-                Integrated instructional tutor powered by Groq LLM answers complex conceptual questions and recommends
-                curated study pathways.
-              </p>
-            </div>
-            <div className="p-3 bg-[#F5F3EC] rounded-xl border border-[#111218] text-[10px] font-mono text-[#111218] space-y-1">
-              <div>Latency: <span className="font-bold">&lt;400ms Streaming</span></div>
-              <div>Access: <span className="font-bold text-[#111218]">Always-on Sidebar</span></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ─────────────────────────────────────────────────────────────
-          5. THE SARAS LOOP: Circular Sequential Diagram
-      ───────────────────────────────────────────────────────────── */}
-      <section className="bg-[#FFFDF7] border-y-2 border-[#111218] py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          <div className="text-center max-w-2xl mx-auto space-y-3">
-            <span className="badge-lime px-3 py-1 text-xs font-extrabold uppercase font-display">
-              Signature Loop
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-[#111218] font-display uppercase tracking-tight">
-              The Saras Active Loop
+            <h2 className="text-3xl sm:text-4xl font-black font-display uppercase tracking-tight text-[#111218]">
+              Live Pipeline Execution
             </h2>
             <p className="text-xs sm:text-sm text-[#636573] font-medium">
-              A continuous cycle of video assimilation, verification, active recall, and focus reinforcement.
+              Simulate the 8-stage transformation from YouTube video URL to grounded learning curriculum.
             </p>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            {[
-              { name: '1. WATCH', role: 'Segmented View', color: '#B8FF3D' },
-              { name: '2. UNDERSTAND', role: 'Topic Chapters', color: '#E9DFFF' },
-              { name: '3. VERIFY', role: 'Checkpoint Quiz', color: '#DCEEFF' },
-              { name: '4. RECALL', role: 'Spaced Cards', color: '#DDF6BD' },
-              { name: '5. MASTER', role: 'Deep Focus', color: '#111218' },
-              { name: '6. REPEAT', role: 'Lifelong Library', color: '#B8FF3D' },
-            ].map((node, idx) => {
-              const isActive = activeLoopStep === idx;
-              return (
-                <div
-                  key={node.name}
-                  className={`p-5 rounded-2xl border-2 border-[#111218] text-center space-y-2 transition-all duration-300 ${
-                    isActive
-                      ? 'bg-[#B8FF3D] shadow-neo-md -translate-y-1'
-                      : 'bg-[#F5F3EC] hover:bg-[#FFFDF7] shadow-neo-sm'
-                  }`}
-                >
-                  <div className="w-7 h-7 rounded-full bg-[#111218] text-white text-xs font-mono font-bold flex items-center justify-center mx-auto">
-                    {idx + 1}
-                  </div>
-                  <h4 className="text-xs font-black font-display text-[#111218] uppercase">{node.name}</h4>
-                  <p className="text-[10px] text-[#636573] font-medium">{node.role}</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ─────────────────────────────────────────────────────────────
-          6. TECH STACK SECTION
-      ───────────────────────────────────────────────────────────── */}
-      <section id="tech-stack" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 space-y-12">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b-2 border-[#111218]">
-          <div className="space-y-2">
-            <span className="badge-black px-2.5 py-0.5 text-xs font-bold uppercase font-display">
-              Engineering Architecture
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-[#111218] font-display uppercase tracking-tight">
-              Built With Modern AI Infrastructure
-            </h2>
-          </div>
-          <p className="text-xs sm:text-sm text-[#636573] font-medium max-w-md">
-            Production-grade web technologies combined with high-speed LLM inference and client-side machine learning.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {[
-            {
-              name: 'Next.js 14',
-              category: 'Full-Stack React Framework',
-              desc: 'App Router, Server Components, and zero-latency dynamic routing.',
-              color: 'bg-[#FFFDF7]',
-            },
-            {
-              name: 'Groq Cloud LLaMA 3.3',
-              category: 'High-Speed LLM Inference',
-              desc: 'Sub-500ms multi-agent generation for quizzes, summaries, and tutor chat.',
-              color: 'bg-[#B8FF3D]',
-            },
-            {
-              name: 'Prisma ORM & SQLite',
-              category: 'Database & State Store',
-              desc: 'Deterministic progress tracking, tasks, streak calculations, and flashcards.',
-              color: 'bg-[#FFFDF7]',
-            },
-            {
-              name: 'MediaPipe FaceMesh',
-              category: 'Client-Side Vision ML',
-              desc: 'On-device face landmark tracking compiled to WebAssembly for 100% private attention detection.',
-              color: 'bg-[#E9DFFF]',
-            },
-            {
-              name: 'Tailwind CSS',
-              category: 'Neo-Brutalist Design System',
-              desc: 'Custom editorial palette (Paper Cream, Ink Black, Electric Lime) and hard offset shadows.',
-              color: 'bg-[#DCEEFF]',
-            },
-            {
-              name: 'YouTube IFrame API',
-              category: 'Video Runtime & Seek Lock',
-              desc: 'Custom programmatic 200ms boundary loop preventing unauthorized segment skipping.',
-              color: 'bg-[#FFFDF7]',
-            },
-            {
-              name: 'WebAssembly (WASM)',
-              category: 'High-Performance In-Browser ML',
-              desc: 'Powers low-overhead attention tracking without GPU server costs.',
-              color: 'bg-[#DDF6BD]',
-            },
-            {
-              name: 'TypeScript',
-              category: 'Type Safety & Verification',
-              desc: 'Strict end-to-end typing across schemas, API routes, and agent contracts.',
-              color: 'bg-[#FFFDF7]',
-            },
-          ].map((tech) => (
-            <div
-              key={tech.name}
-              className={`${tech.color} border-2 border-[#111218] p-5 rounded-2xl shadow-neo hover:-translate-y-1 hover:shadow-neo-lg transition-all flex flex-col justify-between space-y-3 group`}
-            >
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-[#636573] block">
-                  {tech.category}
-                </span>
-                <h4 className="text-sm font-black font-display text-[#111218]">{tech.name}</h4>
-              </div>
-              <p className="text-[11px] text-[#21232C] leading-snug font-medium pt-2 border-t border-[#111218]/15">
-                {tech.desc}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ─────────────────────────────────────────────────────────────
-          7. TRY THE PIPELINE: Interactive Simulation
-      ───────────────────────────────────────────────────────────── */}
-      <section className="bg-[#111218] text-white py-20 border-y-2 border-[#111218]">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-          <div className="text-center space-y-3">
-            <span className="badge-lime px-3 py-1 text-xs font-extrabold uppercase font-display">
-              Live Pipeline Demo
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-white font-display uppercase tracking-tight">
-              Simulate The Ingestion Pipeline
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-300 font-medium max-w-lg mx-auto">
-              Test how Saras AI parses a YouTube video stream into structured checkpoint chapters and recall cards.
-            </p>
-          </div>
-
-          <div className="bg-[#21232C] border-2 border-white/15 rounded-3xl p-6 sm:p-8 space-y-6 shadow-neo-lg">
-            {/* Input Simulator Bar */}
+          <div className="bg-[#F5F3EC] border-2 border-[#111218] rounded-3xl p-6 sm:p-8 shadow-neo space-y-6">
             <div className="flex flex-col sm:flex-row items-center gap-3">
               <input
                 type="text"
                 value={simUrl}
                 onChange={(e) => setSimUrl(e.target.value)}
                 placeholder="Paste any YouTube URL..."
-                className="w-full bg-[#111218] text-white border-2 border-white/20 rounded-xl px-4 py-3 text-xs font-mono focus:outline-none focus:border-[#B8FF3D]"
+                className="flex-1 w-full bg-[#FFFDF7] border-2 border-[#111218] rounded-xl px-4 py-2.5 text-xs font-medium text-[#111218] focus:outline-none shadow-neo-sm"
               />
               <button
                 onClick={handleRunSimulation}
                 disabled={simulationState === 'running'}
-                className="neo-btn-lime w-full sm:w-auto px-6 py-3 text-xs font-bold font-display whitespace-nowrap flex items-center justify-center gap-2 flex-shrink-0"
+                className="neo-btn-primary px-6 py-2.5 text-xs font-bold font-display uppercase whitespace-nowrap shadow-neo-sm hover:shadow-neo disabled:opacity-50"
               >
-                {simulationState === 'running' ? (
-                  <>
-                    <RotateCw className="w-4 h-4 animate-spin text-[#111218]" />
-                    <span>Executing Pipeline...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Simulate Pipeline</span>
-                    <ArrowRight className="w-4 h-4 text-[#111218]" />
-                  </>
-                )}
+                {simulationState === 'running' ? 'Processing Pipeline...' : 'Run Pipeline Demo →'}
               </button>
             </div>
 
-            {/* Stepper Pipeline State */}
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 pt-2">
+            {/* Step Progress Visualizer */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 text-center text-xs font-mono">
               {[
-                { step: 1, title: 'Transcript Extraction', desc: 'Pulling 1,420 token captions' },
-                { step: 2, title: 'Semantic Boundaries', desc: 'Generating 3 topic chapters' },
-                { step: 3, title: 'Checkpoint Quizzes', desc: 'Synthesizing 6 gated questions' },
-                { step: 4, title: 'Recall Card Synthesis', desc: 'Extracting 8 concept cards' },
-                { step: 5, title: 'Lesson Ready', desc: 'Seeding to interactive player' },
-              ].map((st) => {
-                const isPassed = simStep >= st.step;
-                const isCurrent = simStep === st.step;
-
-                return (
-                  <div
-                    key={st.step}
-                    className={`p-3.5 rounded-xl border-2 transition-all ${
-                      isPassed
-                        ? 'bg-[#111218] border-[#B8FF3D] text-white'
-                        : 'bg-[#1A1B22] border-white/10 text-slate-400'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-mono font-bold">Phase 0{st.step}</span>
-                      {isPassed && <Check className="w-3.5 h-3.5 text-[#B8FF3D]" />}
-                    </div>
-                    <h5 className="text-xs font-bold font-display uppercase mt-1.5">{st.title}</h5>
-                    <p className="text-[10px] text-slate-400 mt-0.5">{st.desc}</p>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Result Box */}
-            {simulationState === 'completed' && (
-              <div className="p-4 bg-[#B8FF3D] text-[#111218] rounded-2xl border-2 border-[#111218] flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in duration-300">
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="w-6 h-6 text-[#111218] flex-shrink-0" />
-                  <div>
-                    <h4 className="text-sm font-black font-display uppercase">
-                      Pipeline Execution Succeeded
-                    </h4>
-                    <p className="text-xs font-medium">
-                      Curriculum generated with 3 gated chapters and 8 active recall cards.
-                    </p>
-                  </div>
-                </div>
-                <NextLink
-                  href="/"
-                  className="px-5 py-2 rounded-xl bg-[#111218] text-white text-xs font-bold font-display hover:bg-[#21232C] transition-colors flex-shrink-0"
+                { label: '1. Ingest', activeAt: 1, out: 'Transcript' },
+                { label: '2. Segment', activeAt: 2, out: '3 Chapters' },
+                { label: '3. Quiz', activeAt: 3, out: '6 Quizzes' },
+                { label: '4. Recall', activeAt: 4, out: '8 Cards' },
+                { label: '5. Graph', activeAt: 5, out: '7 Concepts' },
+                { label: '6. Revise', activeAt: 6, out: 'Smart Mix' },
+                { label: '7. Exam', activeAt: 7, out: 'Study Plan' },
+                { label: '8. Build', activeAt: 8, out: 'Project Spec' },
+              ].map((step, idx) => (
+                <div
+                  key={idx}
+                  className={`p-2.5 rounded-xl border-2 border-[#111218] transition-all ${
+                    simStep >= step.activeAt
+                      ? 'bg-[#B8FF3D] font-bold text-[#111218] shadow-neo-sm scale-102'
+                      : 'bg-[#FFFDF7] text-[#636573]'
+                  }`}
                 >
-                  Launch In App →
-                </NextLink>
-              </div>
-            )}
+                  <span className="block text-[10px]">{step.label}</span>
+                  <span className="text-[9px] font-bold text-[#111218] mt-1 block">
+                    {simStep >= step.activeAt ? `✓ ${step.out}` : '···'}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <p className="text-[10px] text-[#636573] font-mono text-center">
+              * Note: Sample metrics above are an illustrative simulation of pipeline outputs.
+            </p>
           </div>
         </div>
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
-          8. PRIVACY & ATTENTION SECTION
+          8. TECH STACK (Truthful Architecture)
       ───────────────────────────────────────────────────────────── */}
-      <section id="privacy" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 space-y-12">
-        <div className="bg-[#FFFDF7] border-2 border-[#111218] rounded-3xl p-8 sm:p-12 shadow-neo-lg relative overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            <div className="lg:col-span-7 space-y-5">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#DDF6BD] border-2 border-[#111218] rounded-md shadow-neo-sm">
-                <Lock className="w-3.5 h-3.5 text-[#111218]" />
-                <span className="text-xs font-bold font-display uppercase tracking-wider text-[#111218]">
-                  Zero Server Surveillance
-                </span>
-              </div>
-
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black font-display uppercase tracking-tight text-[#111218]">
-                Your Camera Stays <br />
-                <span className="bg-[#B8FF3D] px-2.5 py-0.5 rounded-lg border-2 border-[#111218]">
-                  With You.
-                </span>
-              </h2>
-
-              <p className="text-sm text-[#636573] font-medium leading-relaxed">
-                Deep Focus runs entirely inside your browser using Google MediaPipe WebAssembly. No camera frames,
-                recordings, or facial biometric images are ever uploaded or transmitted to any server.
-              </p>
-
-              <div className="space-y-2.5 pt-2">
-                {[
-                  '100% Client-side local inference in browser memory',
-                  'Automatic video pause when looking away for >4 seconds',
-                  'Local session logs stored strictly in browser localStorage',
-                  'Instant camera release upon session completion',
-                ].map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-2 text-xs font-bold text-[#111218]">
-                    <Check className="w-4 h-4 text-[#8ECC24]" />
-                    <span>{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Privacy Flow Diagram */}
-            <div className="lg:col-span-5 bg-[#F5F3EC] border-2 border-[#111218] rounded-2xl p-6 shadow-neo space-y-4">
-              <h4 className="text-xs font-black font-display uppercase text-[#111218] pb-2 border-b border-[#111218]/20">
-                Privacy Architecture Flow
-              </h4>
-
-              <div className="space-y-2 text-xs font-mono font-bold">
-                <div className="p-2.5 bg-[#FFFDF7] rounded-lg border border-[#111218] flex items-center justify-between">
-                  <span>1. Webcam Stream</span>
-                  <span className="text-[#8ECC24]">Local Browser</span>
-                </div>
-                <div className="p-2.5 bg-[#FFFDF7] rounded-lg border border-[#111218] flex items-center justify-between">
-                  <span>2. MediaPipe WASM</span>
-                  <span className="text-[#8ECC24]">Client RAM</span>
-                </div>
-                <div className="p-2.5 bg-[#FFFDF7] rounded-lg border border-[#111218] flex items-center justify-between">
-                  <span>3. Attention Event</span>
-                  <span className="text-[#8ECC24]">UI State</span>
-                </div>
-                <div className="p-2.5 bg-[#FFD1C7] rounded-lg border border-[#111218] flex items-center justify-between text-[#111218]">
-                  <span>Server Upload</span>
-                  <span className="text-red-700 font-black">BLOCKED (0 KB)</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ─────────────────────────────────────────────────────────────
-          9. WHERE WE ARE: Development Status & Roadmap
-      ───────────────────────────────────────────────────────────── */}
-      <section id="status" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 space-y-12">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-4 border-b-2 border-[#111218]">
-          <div className="space-y-2">
-            <span className="badge-black px-2.5 py-0.5 text-xs font-bold uppercase font-display">
-              Transparent Engineering
+      <section id="tech-stack" className="py-20 border-b-2 border-[#111218]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+          <div className="max-w-3xl space-y-2">
+            <span className="badge-black px-2.5 py-0.5 text-xs font-bold uppercase font-display text-white">
+              Engineering Architecture
             </span>
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-[#111218] font-display uppercase tracking-tight">
-              Project Development Status
+            <h2 className="text-3xl sm:text-5xl font-black font-display uppercase tracking-tight text-[#111218]">
+              The Core Tech Stack
             </h2>
-          </div>
-          <p className="text-xs sm:text-sm text-[#636573] font-medium max-w-md">
-            Clear classification of implemented systems, active development, and future research explorations.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Status 1: Working */}
-          <div className="bg-[#DDF6BD] border-2 border-[#111218] rounded-3xl p-6 shadow-neo space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b-2 border-[#111218]">
-              <span className="badge-black px-2.5 py-0.5 text-[10px] font-black uppercase">
-                ● Implemented
-              </span>
-              <span className="text-xs font-mono font-bold text-[#111218]">Working</span>
-            </div>
-            <ul className="space-y-2.5 text-xs font-medium text-[#111218]">
-              <li className="flex items-start gap-2">
-                <Check className="w-4 h-4 text-[#111218] flex-shrink-0 mt-0.5" />
-                <span>YouTube Transcript Ingestion & Segmenting</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <Check className="w-4 h-4 text-[#111218] flex-shrink-0 mt-0.5" />
-                <span>Programmatic 200ms Seek-Lock Player Gating</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <Check className="w-4 h-4 text-[#111218] flex-shrink-0 mt-0.5" />
-                <span>Video-Grounded Multiple Choice Quizzes</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <Check className="w-4 h-4 text-[#111218] flex-shrink-0 mt-0.5" />
-                <span>Spaced Repetition Flashcard Studio</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <Check className="w-4 h-4 text-[#111218] flex-shrink-0 mt-0.5" />
-                <span>Client-Side Local Attention Detection</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <Check className="w-4 h-4 text-[#111218] flex-shrink-0 mt-0.5" />
-                <span>Personal Learning History & Progress Tracking</span>
-              </li>
-            </ul>
-          </div>
-
-          {/* Status 2: In Development */}
-          <div className="bg-[#DCEEFF] border-2 border-[#111218] rounded-3xl p-6 shadow-neo space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b-2 border-[#111218]">
-              <span className="badge-black px-2.5 py-0.5 text-[10px] font-black uppercase">
-                ◐ Active Build
-              </span>
-              <span className="text-xs font-mono font-bold text-[#111218]">In Development</span>
-            </div>
-            <ul className="space-y-2.5 text-xs font-medium text-[#111218]">
-              <li className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#111218] flex-shrink-0 mt-1.5" />
-                <span>Multi-language transcript translation pipelines</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#111218] flex-shrink-0 mt-1.5" />
-                <span>Personalized adaptive quiz difficulty scaling</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#111218] flex-shrink-0 mt-1.5" />
-                <span>PDF / Lecture slide ingestion integration</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#111218] flex-shrink-0 mt-1.5" />
-                <span>Automated SM-2 spaced repetition scheduling</span>
-              </li>
-            </ul>
-          </div>
-
-          {/* Status 3: Exploring */}
-          <div className="bg-[#E9DFFF] border-2 border-[#111218] rounded-3xl p-6 shadow-neo space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b-2 border-[#111218]">
-              <span className="badge-black px-2.5 py-0.5 text-[10px] font-black uppercase">
-                ○ Research
-              </span>
-              <span className="text-xs font-mono font-bold text-[#111218]">Exploring</span>
-            </div>
-            <ul className="space-y-2.5 text-xs font-medium text-[#111218]">
-              <li className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#111218] flex-shrink-0 mt-1.5" />
-                <span>Multimodal video frame diagram reasoning</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#111218] flex-shrink-0 mt-1.5" />
-                <span>Global cross-curriculum knowledge graphs</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#111218] flex-shrink-0 mt-1.5" />
-                <span>Peer-to-peer active recall study rooms</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#111218] flex-shrink-0 mt-1.5" />
-                <span>Voice-interactive AI viva voce examinations</span>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      {/* ─────────────────────────────────────────────────────────────
-          10. FINAL CALL TO ACTION
-      ───────────────────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
-        <div className="bg-[#111218] text-white border-2 border-[#111218] rounded-3xl p-8 sm:p-14 text-center space-y-6 shadow-neo-lg relative overflow-hidden">
-          <div className="max-w-2xl mx-auto space-y-4">
-            <span className="badge-lime px-3 py-1 text-xs font-extrabold uppercase font-display">
-              Start Active Learning
-            </span>
-            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-black font-display uppercase tracking-tight text-white leading-tight">
-              Ready to Learn <br />
-              <span className="text-[#B8FF3D]">Differently?</span>
-            </h2>
-            <p className="text-sm sm:text-base text-slate-300 font-medium leading-relaxed">
-              Paste any lecture or educational video to generate structured topic chapters, checkpoint quizzes, and recall flashcards.
+            <p className="text-sm text-[#636573] font-medium">
+              Built on production-grade web technologies, local in-browser vision models, and Groq Cloud intelligence.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
-            <NextLink
-              href="/"
-              className="neo-btn-lime px-8 py-3.5 text-sm font-bold font-display flex items-center gap-2 shadow-neo"
-            >
-              <span>Launch Saras AI Now</span>
-              <ArrowRight className="w-4 h-4 text-[#111218]" />
-            </NextLink>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+            {[
+              { title: 'Next.js 14', category: 'App Router', desc: 'Hybrid SSR & React Server Actions' },
+              { title: 'Tailwind CSS', category: 'Design System', desc: 'Neo-brutalist custom tokens' },
+              { title: 'Prisma + SQLite', category: 'Data Layer', desc: 'Normalized relational storage' },
+              { title: 'Groq Cloud', category: 'AI Inference', desc: 'LLaMA 3.3 70B fast reasoning' },
+              { title: 'YouTube IFrame', category: 'Video Engine', desc: 'Precision timestamp gating' },
+              { title: 'MediaPipe WASM', category: 'Computer Vision', desc: '100% on-device attention' },
+            ].map((tech, idx) => (
+              <div
+                key={idx}
+                className="bg-[#FFFDF7] border-2 border-[#111218] p-4 rounded-2xl space-y-1 shadow-neo-sm"
+              >
+                <span className="text-[9px] font-mono font-bold uppercase text-[#636573]">
+                  {tech.category}
+                </span>
+                <h4 className="text-sm font-black font-display text-[#111218] uppercase">
+                  {tech.title}
+                </h4>
+                <p className="text-[10px] text-[#21232C] font-medium">{tech.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
-          11. EDITORIAL FOOTER
+          9. DEEP FOCUS & PRIVACY GUARANTEE
       ───────────────────────────────────────────────────────────── */}
-      <footer className="border-t-2 border-[#111218] bg-[#FFFDF7] py-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-lg bg-[#B8FF3D] border-2 border-[#111218] flex items-center justify-center shadow-neo-sm">
-              <Sparkles className="w-3.5 h-3.5 text-[#111218] fill-[#111218]" />
+      <section id="privacy" className="py-20 border-b-2 border-[#111218] bg-[#FFFDF7]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+            <div className="space-y-4">
+              <span className="badge-lime px-2.5 py-0.5 text-xs font-bold uppercase font-display">
+                Deep Work & Privacy
+              </span>
+              <h2 className="text-3xl sm:text-5xl font-black font-display uppercase tracking-tight text-[#111218]">
+                100% On-Device Attention Tracking
+              </h2>
+              <p className="text-xs sm:text-sm text-[#21232C] font-medium leading-relaxed">
+                Deep Focus runs entirely inside your browser canvas using WebAssembly. Camera frames are processed in-memory and discarded instantly. Video is never streamed, recorded to disk, or sent to any server.
+              </p>
+              <div className="flex items-center gap-3 pt-2">
+                <NextLink
+                  href="/focus"
+                  className="neo-btn-primary px-5 py-2.5 text-xs font-bold font-display uppercase flex items-center gap-1.5 shadow-neo-sm"
+                >
+                  <Eye className="w-3.5 h-3.5 text-[#B8FF3D]" />
+                  <span>Try Deep Focus Studio →</span>
+                </NextLink>
+              </div>
             </div>
-            <span className="font-display font-black text-sm text-[#111218]">
-              Saras AI — Learn. Recall. Understand.
+
+            <div className="p-6 rounded-3xl bg-[#B8FF3D] border-2 border-[#111218] space-y-3 shadow-neo">
+              <div className="flex items-center gap-2 text-[#111218]">
+                <Lock className="w-5 h-5 text-[#111218]" />
+                <h4 className="text-sm font-black font-display uppercase">
+                  Privacy Trust Guarantee
+                </h4>
+              </div>
+              <div className="p-4 rounded-2xl bg-[#FFFDF7] border-2 border-[#111218] font-mono text-xs space-y-1 text-[#111218]">
+                <div>CAMERA STREAM → BROWSER CANVAS</div>
+                <div>↳ MEDIAPIPE FACE MESH (WASM)</div>
+                <div>↳ ATTENTION DRIFT DETECTED (&gt;4s)</div>
+                <div>↳ PLAYBACK AUTO-PAUSED</div>
+                <div className="text-emerald-800 font-bold pt-1">✓ 0 FRAMES TRANSMITTED</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────
+          10. PRODUCT STATUS SECTION
+      ───────────────────────────────────────────────────────────── */}
+      <section id="status" className="py-20 border-b-2 border-[#111218]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+          <div className="space-y-2">
+            <span className="badge-black px-2.5 py-0.5 text-xs font-bold uppercase font-display text-white">
+              System Health
             </span>
+            <h2 className="text-3xl sm:text-4xl font-black font-display uppercase tracking-tight text-[#111218]">
+              Product Implementation Status
+            </h2>
           </div>
 
-          <div className="flex items-center gap-6 text-xs font-bold font-display uppercase text-[#636573]">
-            <NextLink href="/" className="hover:text-[#111218]">
-              App Workspace
-            </NextLink>
-            <NextLink href="/flashcards" className="hover:text-[#111218]">
-              Flashcards
-            </NextLink>
-            <NextLink href="/focus" className="hover:text-[#111218]">
-              Deep Focus
-            </NextLink>
-            <a
-              href="https://github.com/badgujarkunal93-blip/Saras-AI"
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-[#111218] flex items-center gap-1"
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+            {[
+              { name: 'Video Ingestion & Deduplication', status: 'Working', desc: 'Transcript extraction and SQLite caching' },
+              { name: 'Segmentation & Checkpoints', status: 'Working', desc: 'Topic-bounded chapters with quiz gating' },
+              { name: 'Smart Notes & Flashcards', status: 'Working', desc: 'Structured notes and active recall decks' },
+              { name: 'Hierarchical Knowledge Map', status: 'Working', desc: 'Domain clustering and prerequisite DAG' },
+              { name: 'Adaptive AI Revision Engine', status: 'Working', desc: 'Smart mix and weak area candidate selection' },
+              { name: 'Adaptive Exam Mode', status: 'Working', desc: 'Prerequisite study roadmap with replanning' },
+              { name: 'Deep Focus Studio', status: 'Working', desc: 'Local attention monitoring & auto-pause' },
+              { name: 'Video → Project Generator', status: 'Working', desc: 'Grounded software project specs' },
+              { name: 'Multi-User Isolation', status: 'Working', desc: 'Scoped progress, mastery, and exam plans' },
+            ].map((feat, idx) => (
+              <div
+                key={idx}
+                className="bg-[#FFFDF7] border-2 border-[#111218] p-4 rounded-2xl flex items-start justify-between gap-3 shadow-neo-sm"
+              >
+                <div className="space-y-0.5">
+                  <h4 className="font-black font-display uppercase text-[#111218]">{feat.name}</h4>
+                  <p className="text-[11px] text-[#636573]">{feat.desc}</p>
+                </div>
+                <span className="badge-lime px-2 py-0.5 text-[9px] font-mono font-bold flex-shrink-0">
+                  {feat.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────
+          11. FINAL HERO CTA
+      ───────────────────────────────────────────────────────────── */}
+      <section className="py-24 bg-[#B8FF3D] border-b-2 border-[#111218] text-[#111218]">
+        <div className="max-w-4xl mx-auto px-4 text-center space-y-6">
+          <span className="badge-black px-3 py-1 text-xs font-bold uppercase font-mono tracking-widest text-white">
+            SARAS AI LEARNING SYSTEM
+          </span>
+
+          <h2 className="text-4xl sm:text-6xl font-black font-display uppercase tracking-tight text-[#111218] leading-[1.05]">
+            Don&apos;t Just Watch. <br /> Build Knowledge.
+          </h2>
+
+          <p className="text-base sm:text-lg text-[#111218] font-medium max-w-xl mx-auto leading-relaxed">
+            Give Saras a video. Let it structure the lesson, challenge your understanding, map what you know, help you revise, prepare, and build.
+          </p>
+
+          <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
+            <NextLink
+              href="/"
+              className="px-8 py-4 bg-[#111218] text-white hover:bg-black font-black font-display uppercase text-sm rounded-2xl border-2 border-[#111218] shadow-neo hover:shadow-neo-lg hover:-translate-y-0.5 transition-all flex items-center gap-2"
             >
-              <span>GitHub</span>
-              <ExternalLink className="w-3 h-3" />
+              <span>Open Saras AI →</span>
+              <Sparkles className="w-4 h-4 text-[#B8FF3D]" />
+            </NextLink>
+
+            <a
+              href="#how-it-works"
+              className="px-6 py-4 bg-[#FFFDF7] text-[#111218] font-bold font-display uppercase text-sm rounded-2xl border-2 border-[#111218] shadow-neo-sm hover:shadow-neo transition-all"
+            >
+              <span>Explore How It Works</span>
             </a>
           </div>
+        </div>
+      </section>
 
-          <span className="text-[11px] font-mono text-[#636573]">
-            MIT Open Source · AI/ML Project
-          </span>
+      {/* ─────────────────────────────────────────────────────────────
+          12. FOOTER
+      ───────────────────────────────────────────────────────────── */}
+      <footer className="py-12 bg-[#F5F3EC] text-xs text-[#636573] border-t-2 border-[#111218]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 font-mono">
+          <div className="flex items-center gap-2">
+            <span className="font-black text-[#111218] font-display uppercase">Saras AI</span>
+            <span>· Learn. Recall. Understand.</span>
+          </div>
+          <div>All video content, transcripts & mastery grounded deterministically.</div>
         </div>
       </footer>
     </div>
