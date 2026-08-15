@@ -1,4 +1,4 @@
-// Prisma Schema for Learnly Platform
+// Prisma Schema for Saras AI Platform
 
 generator client {
   provider = "prisma-client-js"
@@ -25,6 +25,7 @@ model Video {
   progress         UserVideoProgress[]
   tasks            Task[]
   attention_events AttentionEvent[]
+  projects         ProjectIdea[]
 
   @@index([youtube_video_id])
 }
@@ -116,5 +117,39 @@ model ChatMessage {
   suggested_video_ids String?  // JSON string array of video ids or youtube metadata
   created_at          DateTime @default(now())
 
+  @@index([user_id])
+}
+
+model ProjectIdea {
+  id                  String        @id @default(cuid())
+  video_id            String
+  video               Video         @relation(fields: [video_id], references: [id], onDelete: Cascade)
+  title               String
+  problem_statement   String
+  difficulty          String        @default("Intermediate") // 'Beginner' | 'Intermediate' | 'Advanced'
+  why_it_fits         String
+  skills_practiced    String        // JSON array of strings
+  requirements        String        // JSON array of strings
+  milestones          String        // JSON array of objects: [{ "id": "m1", "label": "...", "detail": "..." }]
+  expected_outcome    String
+  optional_extensions String        @default("[]") // JSON array of strings
+  created_at          DateTime      @default(now())
+  user_projects       UserProject[]
+
+  @@index([video_id])
+}
+
+model UserProject {
+  id                      String      @id @default(cuid())
+  user_id                 String      @default("default_user")
+  project_idea_id         String
+  project_idea            ProjectIdea @relation(fields: [project_idea_id], references: [id], onDelete: Cascade)
+  status                  String      @default("not_started") // 'not_started' | 'in_progress' | 'completed'
+  completed_milestone_ids String      @default("[]") // JSON array of milestone ids
+  notes                   String?
+  created_at              DateTime    @default(now())
+  updated_at              DateTime    @default(now())
+
+  @@unique([user_id, project_idea_id])
   @@index([user_id])
 }

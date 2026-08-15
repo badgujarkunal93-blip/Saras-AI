@@ -20,8 +20,11 @@ import {
   HelpCircle,
   Eye,
   Lock,
+  Hammer,
+  ArrowRight,
 } from 'lucide-react';
 import NextLink from 'next/link';
+import { ProjectRoadmapView } from '@/components/projects/ProjectRoadmapView';
 
 interface VideoDetail {
   id: string;
@@ -52,7 +55,7 @@ export default function VideoDetailPage() {
 
   const [video, setVideo] = useState<VideoDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'segments' | 'flashcards' | 'quiz_bank'>('segments');
+  const [activeTab, setActiveTab] = useState<'segments' | 'flashcards' | 'quiz_bank' | 'projects'>('segments');
   const [newCardFront, setNewCardFront] = useState('');
   const [newCardBack, setNewCardBack] = useState('');
   const [isAddingCard, setIsAddingCard] = useState(false);
@@ -252,6 +255,30 @@ export default function VideoDetailPage() {
         initialCompletedSegmentIds={completedIds}
       />
 
+      {/* Turn This Lesson Into A Hands-on Project Banner */}
+      <div className="bg-[#E9DFFF] border-2 border-[#111218] rounded-3xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-neo">
+        <div className="flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-2xl bg-[#B8FF3D] border-2 border-[#111218] flex items-center justify-center flex-shrink-0 shadow-neo-sm">
+            <Hammer className="w-5 h-5 text-[#111218]" />
+          </div>
+          <div>
+            <h4 className="text-xs sm:text-sm font-black font-display uppercase text-[#111218]">
+              Turn This Lesson Into A Hands-on Project
+            </h4>
+            <p className="text-xs text-[#21232C] font-medium">
+              Apply concepts taught in this video to a structured implementation roadmap.
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => setActiveTab('projects')}
+          className="neo-btn-primary px-4 py-2.5 text-xs font-bold font-display flex items-center gap-2 flex-shrink-0 shadow-neo-sm"
+        >
+          <span>Build Something With This</span>
+          <ArrowRight className="w-3.5 h-3.5 text-[#B8FF3D]" />
+        </button>
+      </div>
+
       {/* Tabs Container */}
       <div className="bg-[#FFFDF7] border-2 border-[#111218] rounded-3xl p-5 sm:p-6 space-y-6 shadow-neo">
         <div className="flex items-center gap-2 border-b-2 border-[#111218]/10 pb-3.5 overflow-x-auto no-scrollbar">
@@ -289,6 +316,18 @@ export default function VideoDetailPage() {
           >
             <HelpCircle className="w-3.5 h-3.5" />
             <span>Checkpoint Review</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('projects')}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold font-display uppercase transition-all ${
+              activeTab === 'projects'
+                ? 'bg-[#B8FF3D] text-[#111218] border-2 border-[#111218] shadow-neo-sm'
+                : 'text-[#111218] hover:bg-[#F5F3EC]'
+            }`}
+          >
+            <Hammer className="w-3.5 h-3.5" />
+            <span>Build Project</span>
           </button>
         </div>
 
@@ -527,6 +566,13 @@ export default function VideoDetailPage() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Tab Content 4: Build Project Roadmap */}
+        {activeTab === 'projects' && (
+          <div className="pt-2">
+            <ProjectRoadmapView videoId={video.id} videoTitle={video.title} />
           </div>
         )}
       </div>

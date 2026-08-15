@@ -28,6 +28,7 @@ import {
   X,
   SlidersHorizontal,
   RotateCcw,
+  Hammer,
 } from 'lucide-react';
 import {
   CURATED_LESSONS,
@@ -497,7 +498,7 @@ export default function DiscoverHomePage() {
       {/* ─────────────────────────────────────────────────────────────
           2. THREE EDITORIAL ENTRY TILES (Watch, Topic, Recall)
       ───────────────────────────────────────────────────────────── */}
-      <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Entry 1: Watch a Video (Lime Accent) */}
         <button
           onClick={() => {
@@ -569,6 +570,37 @@ export default function DiscoverHomePage() {
             </p>
           </div>
         </NextLink>
+
+        {/* Entry 4: Build Projects (Mint / Sage Accent) */}
+        <button
+          onClick={() => {
+            const firstVideo = userHistoryVideos[0] || dbVideos[0];
+            if (firstVideo) {
+              router.push(`/video/${firstVideo.id}`);
+            } else {
+              const inputEl = document.querySelector('input') as HTMLInputElement;
+              inputEl?.focus();
+            }
+          }}
+          className="bg-[#DDF6BD] border-2 border-[#111218] rounded-2xl p-5 text-left flex flex-col justify-between space-y-4 shadow-neo hover:-translate-y-1 hover:shadow-neo-lg transition-all group"
+        >
+          <div className="flex items-center justify-between">
+            <span className="badge-black px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+              Step 04
+            </span>
+            <div className="circle-arrow-btn">
+              <ArrowUpRight className="w-4 h-4" />
+            </div>
+          </div>
+          <div>
+            <h3 className="text-base font-extrabold text-[#111218] font-display uppercase tracking-tight">
+              Build Projects
+            </h3>
+            <p className="text-xs text-[#21232C] font-medium mt-1 leading-snug">
+              Turn what you learned into structured, actionable real-world project roadmaps.
+            </p>
+          </div>
+        </button>
       </section>
 
       {/* ─────────────────────────────────────────────────────────────

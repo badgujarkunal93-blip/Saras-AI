@@ -1024,3 +1024,215 @@ export function generateTranscriptGroundedFlashcards(
     },
   ];
 }
+
+export interface ProjectMilestone {
+  id: string;
+  label: string;
+  detail: string;
+}
+
+export interface GeneratedProjectIdea {
+  title: string;
+  problem_statement: string;
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  why_it_fits: string;
+  skills_practiced: string[];
+  requirements: string[];
+  milestones: ProjectMilestone[];
+  expected_outcome: string;
+  optional_extensions: string[];
+}
+
+/**
+ * Generates a practical, grounded project recommendation based on concepts
+ * actually taught in the specific video lesson.
+ */
+export async function generateProjectForVideo(
+  videoTitle: string,
+  channel: string,
+  segments: { title: string; summary?: string | null }[],
+  transcriptSnippet?: string
+): Promise<GeneratedProjectIdea> {
+  const groqKey = process.env.GROQ_API_KEY;
+  const claudeKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY;
+
+  const segmentSummary = segments
+    .map((s, idx) => `Chapter ${idx + 1}: "${s.title}" - ${s.summary || 'Core concept'}`)
+    .join('\n');
+
+  const systemPrompt = `You are Saras AI's Project Architect Agent.
+Your job is to recommend a single, highly actionable, practical PROJECT that a student can build immediately using the exact skills, frameworks, mechanisms, or principles taught in this video lecture.
+
+RULES:
+1. GROUNDING: Every skill, requirement, and milestone MUST directly exercise what was taught in this specific video.
+2. DOMAIN MATCH:
+   - For a programming/CS video: Recommend a software/coding project (e.g. CLI tool, web app, script).
+   - For hardware/PC/systems video: Recommend a hardware configuration tool, architecture simulator, or benchmark suite.
+   - For data/AI/ML video: Recommend an end-to-end dataset analysis pipeline, model evaluator, or training script.
+   - For math/science/theory: Recommend an interactive visualizer, numerical simulator, or formal case study.
+3. NO PHANTOM SKILLS: Do NOT require complex third-party tools or frameworks that were never mentioned.
+4. VALIDATION: In "why_it_fits", explicitly explain how each milestone puts the video's concepts into practice.
+
+OUTPUT JSON FORMAT (STRICT):
+{
+  "title": "Clear Project Title",
+  "problem_statement": "1-2 sentences on what problem this project solves.",
+  "difficulty": "Beginner" | "Intermediate" | "Advanced",
+  "why_it_fits": "2 sentences explaining exactly why this project reinforces the video lessons.",
+  "skills_practiced": ["Skill 1", "Skill 2", "Skill 3", "Skill 4"],
+  "requirements": [
+    "Requirement 1",
+    "Requirement 2",
+    "Requirement 3",
+    "Requirement 4"
+  ],
+  "milestones": [
+    { "id": "m1", "label": "Milestone 1: ...", "detail": "Detailed actionable step" },
+    { "id": "m2", "label": "Milestone 2: ...", "detail": "Detailed actionable step" },
+    { "id": "m3", "label": "Milestone 3: ...", "detail": "Detailed actionable step" },
+    { "id": "m4", "label": "Milestone 4: ...", "detail": "Detailed actionable step" }
+  ],
+  "expected_outcome": "Description of the finished working project.",
+  "optional_extensions": [
+    "Extension 1",
+    "Extension 2"
+  ]
+}`;
+
+  const userPrompt = `VIDEO TITLE: "${videoTitle}"
+CREATOR / CHANNEL: "${channel}"
+TOPIC CHAPTERS TAUGHT:
+${segmentSummary}
+
+TRANSCRIPT SAMPLE:
+${(transcriptSnippet || '').slice(0, 3000)}
+
+Generate the grounded project recommendation JSON now:`;
+
+  // 1. Groq LLaMA 3.3 Generation
+  if (groqKey) {
+    try {
+      console.log(`[GROQ] Generating project recommendation for "${videoTitle}"...`);
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${groqKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+          response_format: { type: 'json_object' },
+          temperature: 0.25,
+          max_tokens: 2000,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const content = data.choices?.[0]?.message?.content;
+        if (content) {
+          const parsed = JSON.parse(content);
+          if (parsed.title && parsed.milestones?.length > 0) {
+            console.log(`[GROQ] Project generated: "${parsed.title}"`);
+            return {
+              title: parsed.title,
+              problem_statement: parsed.problem_statement || 'A hands-on implementation project.',
+              difficulty: parsed.difficulty || 'Intermediate',
+              why_it_fits: parsed.why_it_fits || `Directly applies the concepts taught in ${videoTitle}.`,
+              skills_practiced: Array.isArray(parsed.skills_practiced) ? parsed.skills_practiced : ['Core Concept Application'],
+              requirements: Array.isArray(parsed.requirements) ? parsed.requirements : ['Working implementation'],
+              milestones: Array.isArray(parsed.milestones)
+                ? parsed.milestones.map((m: any, idx: number) => ({
+                    id: m.id || `m${idx + 1}`,
+                    label: m.label || `Step ${idx + 1}`,
+                    detail: m.detail || m.label || '',
+                  }))
+                : [],
+              expected_outcome: parsed.expected_outcome || 'A fully functional project showcasing mastery.',
+              optional_extensions: Array.isArray(parsed.optional_extensions) ? parsed.optional_extensions : [],
+            };
+          }
+        }
+      }
+    } catch (e: any) {
+      console.warn('[GROQ] Project generation error:', e.message);
+    }
+  }
+
+  // 2. Deterministic Fallback based on video topic
+  const lowerTitle = videoTitle.toLowerCase();
+  if (lowerTitle.includes('pc component') || lowerTitle.includes('hardware')) {
+    return {
+      title: 'Interactive PC Compatibility & Bottleneck Calculator',
+      problem_statement: 'Build an interactive configuration tool that models CPU, GPU, RAM, and PSU wattage balancing for custom computer builds.',
+      difficulty: 'Intermediate',
+      why_it_fits: 'Reinforces the operational roles of the CPU, GPU, RAM memory hierarchies, and motherboard PCIe buses covered in the video.',
+      skills_practiced: ['Component Power Budgeting', 'Data Modeling', 'PCIe Bandwidth Calculation', 'UI State Management'],
+      requirements: [
+        'Model specifications for CPU socket types, DDR4/DDR5 RAM channels, and GPU PCIe lanes.',
+        'Calculate total estimated wattage and recommend minimum 80-Plus PSU capacity.',
+        'Flag component incompatibilities (e.g. DDR5 RAM on DDR4 motherboard).',
+        'Provide an interactive summary breakdown of the build configuration.',
+      ],
+      milestones: [
+        { id: 'm1', label: 'Define Hardware Schema', detail: 'Create typed data models for CPU, GPU, Motherboard, RAM, Storage, and PSU specifications.' },
+        { id: 'm2', label: 'Compatibility Rules Engine', detail: 'Implement validation functions that verify socket matching, RAM generation, and form factor clearance.' },
+        { id: 'm3', label: 'Wattage & Bottleneck Calculator', detail: 'Add algorithmic power draw estimation with 20% headroom and calculate CPU-GPU balance ratings.' },
+        { id: 'm4', label: 'Build Export & Sharing', detail: 'Add local persistence and exportable share links for saved PC build blueprints.' },
+      ],
+      expected_outcome: 'A functional web or CLI tool that validates component compatibility and calculates system power requirements.',
+      optional_extensions: ['Add price comparison tracking', 'Implement 3D visual component placement guide'],
+    };
+  }
+
+  if (lowerTitle.includes('computer science') || lowerTitle.includes('programming')) {
+    return {
+      title: 'Memory-Visualized Mini Virtual Machine (Bytecode Interpreter)',
+      problem_statement: 'Construct a compact 8-instruction stack virtual machine that demonstrates fetch-decode-execute cycles, memory registers, and ALU operations.',
+      difficulty: 'Intermediate',
+      why_it_fits: 'Directly reinforces the fetch-execute cycle, binary logic gates, and memory hierarchies taught in the computer science lecture.',
+      skills_practiced: ['Computer Architecture', 'Instruction Set Design', 'Stack Memory Manipulation', 'ALU Emulation'],
+      requirements: [
+        'Define a simulated memory array (256 bytes) and program counter register.',
+        'Implement fundamental opcodes: PUSH, POP, ADD, SUB, JUMP, PRINT, HALT.',
+        'Display step-by-step visual execution of the stack and register states.',
+      ],
+      milestones: [
+        { id: 'm1', label: 'Design CPU Registers & Memory', detail: 'Set up simulated memory buffers, stack pointer, and instruction registers.' },
+        { id: 'm2', label: 'Implement Instruction Decoder', detail: 'Write the fetch-decode-execute loop to parse bytecode tokens into ALU operations.' },
+        { id: 'm3', label: 'Write Sample Assembly Programs', detail: 'Create test programs (e.g. calculating Fibonacci numbers or summing an array).' },
+        { id: 'm4', label: 'Add Visual Step-Debugger', detail: 'Build a step-by-step UI or terminal output showing memory transitions at each clock cycle.' },
+      ],
+      expected_outcome: 'A working virtual machine that executes custom bytecode and visualizes stack memory transitions in real time.',
+      optional_extensions: ['Add conditional branching (JUMP_IF_ZERO)', 'Compile simple math expressions directly to your bytecode'],
+    };
+  }
+
+  // Generic fallback grounded in video segments
+  const mainSkills = segments.map((s) => s.title.split(/[:–-]/)[0].trim()).slice(0, 4);
+  return {
+    title: `Practical Implementation: ${videoTitle.split(/[-|–]/)[0].trim()}`,
+    problem_statement: `Build a hands-on project applying the core concepts, workflows, and mechanisms taught in this lecture.`,
+    difficulty: 'Intermediate',
+    why_it_fits: `Directly bridges theory into practice by implementing each concept chapter from the lesson step by step.`,
+    skills_practiced: mainSkills.length > 0 ? mainSkills : ['Core Architecture', 'Implementation', 'Optimization', 'Verification'],
+    requirements: [
+      'Implement the foundational data structure or model as detailed in the lesson.',
+      'Construct the operational logic and mechanism workflow.',
+      'Add validation, edge-case handling, and verification checks.',
+      'Document key architectural decisions and performance trade-offs.',
+    ],
+    milestones: segments.slice(0, 4).map((s, idx) => ({
+      id: `m${idx + 1}`,
+      label: `Phase ${idx + 1}: ${s.title}`,
+      detail: `Implement and verify the practical mechanics of ${s.title}.`,
+    })),
+    expected_outcome: `A verified, functional project demonstrating mastery over the topics covered in ${videoTitle}.`,
+    optional_extensions: ['Add automated unit tests for core edge cases', 'Benchmark performance against alternative approaches'],
+  };
+}
+
