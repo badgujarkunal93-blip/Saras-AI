@@ -19,6 +19,7 @@ import {
   Brain,
   Layers,
   GraduationCap,
+  Layers2,
 } from 'lucide-react';
 import {
   KnowledgeGraphCanvas,
@@ -52,7 +53,7 @@ export default function KnowledgeMapPage() {
   const [activeFilter, setActiveFilter] = useState<string>('ALL');
   const [selectedCategory, setSelectedCategory] = useState<string>('All Topics');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
+  const [selectedNode, setSelectedNode] = useState<any | null>(null);
 
   const fetchGraphData = async () => {
     try {
@@ -80,22 +81,24 @@ export default function KnowledgeMapPage() {
   }, [activeFilter, selectedCategory, searchQuery]);
 
   return (
-    <div className="space-y-8 pb-20 max-w-7xl mx-auto">
-      {/* 1. Header & Summary Banner */}
-      <div className="bg-[#FFFDF7] border-2 border-[#111218] rounded-3xl p-6 sm:p-8 shadow-neo space-y-6">
+    <div className="space-y-6 pb-20 max-w-7xl mx-auto">
+      {/* ─────────────────────────────────────────────────────────────
+          1. HEADER & HIGH-LEVEL KNOWLEDGE SUMMARY
+      ───────────────────────────────────────────────────────────── */}
+      <div className="bg-[#FFFDF7] border-2 border-[#111218] rounded-3xl p-6 sm:p-7 shadow-neo space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#B8FF3D] border-2 border-[#111218] rounded-md shadow-neo-sm">
               <Network className="w-3.5 h-3.5 text-[#111218]" />
               <span className="text-xs font-black font-display uppercase tracking-wider text-[#111218]">
                 Intelligence Foundation
               </span>
             </div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-[#111218] font-display uppercase tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-black text-[#111218] font-display uppercase tracking-tight">
               Personal Knowledge Map
             </h1>
             <p className="text-xs sm:text-sm text-[#636573] font-medium max-w-2xl leading-relaxed">
-              A real-time, data-driven map connecting concepts from your video lessons, checkpoint quizzes, and active recall mastery.
+              Hierarchical curriculum map connecting concepts from your video lessons, checkpoint quizzes, and active recall mastery.
             </p>
           </div>
 
@@ -127,8 +130,8 @@ export default function KnowledgeMapPage() {
         </div>
 
         {/* Dynamic Metric Tiles */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-2">
-          <div className="p-3.5 rounded-2xl bg-[#F5F3EC] border-2 border-[#111218] shadow-neo-sm space-y-1">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-1">
+          <div className="p-3 rounded-2xl bg-[#F5F3EC] border-2 border-[#111218] shadow-neo-sm space-y-0.5">
             <span className="text-[10px] font-mono font-bold uppercase text-[#636573]">
               Total Concepts
             </span>
@@ -138,7 +141,7 @@ export default function KnowledgeMapPage() {
             <span className="text-[10px] text-[#636573] font-medium">In your graph</span>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-[#DDF6BD] border-2 border-[#111218] shadow-neo-sm space-y-1">
+          <div className="p-3 rounded-2xl bg-[#B8FF3D]/30 border-2 border-[#111218] shadow-neo-sm space-y-0.5">
             <span className="text-[10px] font-mono font-bold uppercase text-[#111218]">
               Mastered (≥80%)
             </span>
@@ -148,7 +151,7 @@ export default function KnowledgeMapPage() {
             <span className="text-[10px] text-[#21232C] font-medium">Strong recall</span>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-[#E9DFFF] border-2 border-[#111218] shadow-neo-sm space-y-1">
+          <div className="p-3 rounded-2xl bg-[#E9DFFF] border-2 border-[#111218] shadow-neo-sm space-y-0.5">
             <span className="text-[10px] font-mono font-bold uppercase text-[#21232C]">
               Developing (50-79%)
             </span>
@@ -158,7 +161,7 @@ export default function KnowledgeMapPage() {
             <span className="text-[10px] text-[#636573] font-medium">In progress</span>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-[#FFD1C7] border-2 border-[#111218] shadow-neo-sm space-y-1">
+          <div className="p-3 rounded-2xl bg-[#FFD1C7] border-2 border-[#111218] shadow-neo-sm space-y-0.5">
             <span className="text-[10px] font-mono font-bold uppercase text-red-950">
               Needs Review (&lt;50%)
             </span>
@@ -168,7 +171,7 @@ export default function KnowledgeMapPage() {
             <span className="text-[10px] text-red-900 font-medium">Action required</span>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-[#FFFDF7] border-2 border-[#111218] shadow-neo-sm space-y-1">
+          <div className="p-3 rounded-2xl bg-[#FFFDF7] border-2 border-[#111218] shadow-neo-sm space-y-0.5">
             <span className="text-[10px] font-mono font-bold uppercase text-[#636573]">
               Not Studied
             </span>
@@ -180,41 +183,72 @@ export default function KnowledgeMapPage() {
         </div>
       </div>
 
-      {/* 2. Top Controls & Search Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        {/* Search */}
-        <div className="relative flex-1 max-w-md">
+      {/* ─────────────────────────────────────────────────────────────
+          2. SEARCH & DOMAIN FOCUS CONTROLS
+      ───────────────────────────────────────────────────────────── */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        {/* Search Input */}
+        <div className="relative flex-1 max-w-sm">
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#636573]" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search concepts across knowledge graph..."
-            className="w-full pl-9 pr-4 py-2.5 bg-[#FFFDF7] border-2 border-[#111218] rounded-xl text-xs font-medium focus:outline-none shadow-neo-sm focus:shadow-neo"
+            className="w-full pl-9 pr-4 py-2 bg-[#FFFDF7] border-2 border-[#111218] rounded-xl text-xs font-medium focus:outline-none shadow-neo-sm focus:shadow-neo"
           />
         </div>
 
-        {/* Mastery Filter Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-          {['ALL', 'MASTERED', 'DEVELOPING', 'WEAK', 'NOT_STUDIED'].map((f) => (
-            <button
-              key={f}
-              onClick={() => setActiveFilter(f)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold font-display uppercase whitespace-nowrap transition-all ${
-                activeFilter === f
-                  ? 'bg-[#B8FF3D] text-[#111218] border-2 border-[#111218] shadow-neo-sm'
-                  : 'bg-[#FFFDF7] text-[#636573] border-2 border-[#111218]/30 hover:border-[#111218] hover:text-[#111218]'
-              }`}
+        {/* Domain Topic Selector & Quick Filters */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Focus Topic Selector */}
+          <div className="flex items-center gap-1.5 bg-[#FFFDF7] border-2 border-[#111218] px-3 py-1.5 rounded-xl shadow-neo-sm">
+            <Layers2 className="w-3.5 h-3.5 text-[#111218]" />
+            <span className="text-[10px] font-bold font-mono uppercase text-[#636573]">Topic:</span>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="bg-transparent text-xs font-bold text-[#111218] focus:outline-none cursor-pointer"
             >
-              {f.replace('_', ' ')}
-            </button>
-          ))}
+              <option value="All Topics">All Domains ({data?.nodes.length || 0})</option>
+              {data?.categories.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Quick Mastery Filter Pills */}
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
+            {[
+              { id: 'ALL', label: 'All' },
+              { id: 'WEAK', label: 'Weak Areas' },
+              { id: 'MASTERED', label: 'Mastered' },
+              { id: 'DEVELOPING', label: 'Developing' },
+              { id: 'NOT_STUDIED', label: 'Not Studied' },
+            ].map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setActiveFilter(f.id)}
+                className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold font-display uppercase whitespace-nowrap transition-all ${
+                  activeFilter === f.id
+                    ? 'bg-[#B8FF3D] text-[#111218] border-2 border-[#111218] shadow-neo-sm'
+                    : 'bg-[#FFFDF7] text-[#636573] border-2 border-[#111218]/30 hover:border-[#111218] hover:text-[#111218]'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* 3. Main Graph Visualizer */}
+      {/* ─────────────────────────────────────────────────────────────
+          3. MAIN GRAPH VISUALIZER
+      ───────────────────────────────────────────────────────────── */}
       {loading && !data ? (
-        <div className="w-full h-[680px] bg-[#FFFDF7] border-2 border-[#111218] rounded-3xl flex flex-col items-center justify-center gap-3 shadow-neo">
+        <div className="w-full h-[720px] bg-[#FFFDF7] border-2 border-[#111218] rounded-3xl flex flex-col items-center justify-center gap-3 shadow-neo">
           <RotateCw className="w-8 h-8 animate-spin text-[#111218]" />
           <p className="text-xs font-bold font-display uppercase text-[#111218]">
             Synthesizing Knowledge Map Graph...
@@ -227,7 +261,7 @@ export default function KnowledgeMapPage() {
           </div>
           <div className="space-y-1">
             <h3 className="text-lg font-extrabold text-[#111218] font-display uppercase">
-              Your Map Is Waiting For Its First Concept
+              Your Knowledge Map Is Just Getting Started
             </h3>
             <p className="text-xs text-[#636573] font-medium max-w-sm mx-auto">
               Complete any video lesson to begin dynamically constructing your personal knowledge map.
@@ -245,16 +279,19 @@ export default function KnowledgeMapPage() {
         <KnowledgeGraphCanvas
           nodes={data?.nodes || []}
           edges={data?.edges || []}
+          selectedCategory={selectedCategory}
           onSelectNode={(node) => setSelectedNode(node)}
           selectedNodeId={selectedNode?.id}
         />
       )}
 
-      {/* 4. Three High-Yield Bottom Intelligence Panels */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* ─────────────────────────────────────────────────────────────
+          4. THREE HIGH-YIELD BOTTOM INTELLIGENCE PANELS
+      ───────────────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* Panel 1: Weak Areas (Needs Attention) */}
-        <div className="bg-[#FFFDF7] border-2 border-[#111218] rounded-3xl p-6 shadow-neo space-y-4 flex flex-col justify-between">
-          <div className="space-y-3">
+        <div className="bg-[#FFFDF7] border-2 border-[#111218] rounded-3xl p-5 shadow-neo space-y-3.5 flex flex-col justify-between">
+          <div className="space-y-2.5">
             <div className="flex items-center justify-between pb-2 border-b-2 border-[#111218]">
               <span className="badge-black px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider bg-[#FFD1C7] text-red-950">
                 Needs Attention
@@ -265,12 +302,12 @@ export default function KnowledgeMapPage() {
             </div>
 
             {data?.weak_areas && data.weak_areas.length > 0 ? (
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 {data.weak_areas.map((w) => (
                   <div
                     key={w.id}
                     onClick={() => setSelectedNode(w)}
-                    className="p-3 rounded-xl bg-[#F5F3EC] border-2 border-[#111218] flex items-center justify-between cursor-pointer hover:bg-[#FFD1C7] transition-all"
+                    className="p-2.5 rounded-xl bg-[#F5F3EC] border-2 border-[#111218] flex items-center justify-between cursor-pointer hover:bg-[#FFD1C7] transition-all"
                   >
                     <div>
                       <h5 className="text-xs font-bold font-display uppercase text-[#111218]">
@@ -290,24 +327,23 @@ export default function KnowledgeMapPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-[#636573] font-medium py-4">
+              <p className="text-xs text-[#636573] font-medium py-3">
                 No weak concepts identified. All studied topics are progressing well!
               </p>
             )}
           </div>
 
           <NextLink
-            href="/flashcards"
+            href="/revision"
             className="neo-btn-primary w-full py-2 text-xs font-bold font-display flex items-center justify-center gap-2"
           >
-            <span>Review In Flashcards Studio</span>
-            <ArrowRight className="w-3.5 h-3.5 text-[#B8FF3D]" />
+            <span>Revise Weak Concepts →</span>
           </NextLink>
         </div>
 
         {/* Panel 2: Recently Learned */}
-        <div className="bg-[#FFFDF7] border-2 border-[#111218] rounded-3xl p-6 shadow-neo space-y-4 flex flex-col justify-between">
-          <div className="space-y-3">
+        <div className="bg-[#FFFDF7] border-2 border-[#111218] rounded-3xl p-5 shadow-neo space-y-3.5 flex flex-col justify-between">
+          <div className="space-y-2.5">
             <div className="flex items-center justify-between pb-2 border-b-2 border-[#111218]">
               <span className="badge-lime px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider">
                 Recent Activity
@@ -318,12 +354,12 @@ export default function KnowledgeMapPage() {
             </div>
 
             {data?.recently_learned && data.recently_learned.length > 0 ? (
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 {data.recently_learned.map((r) => (
                   <div
                     key={r.id}
                     onClick={() => setSelectedNode(r)}
-                    className="p-3 rounded-xl bg-[#F5F3EC] border-2 border-[#111218] flex items-center justify-between cursor-pointer hover:bg-[#DDF6BD] transition-all"
+                    className="p-2.5 rounded-xl bg-[#F5F3EC] border-2 border-[#111218] flex items-center justify-between cursor-pointer hover:bg-[#DDF6BD] transition-all"
                   >
                     <div>
                       <h5 className="text-xs font-bold font-display uppercase text-[#111218]">
@@ -340,69 +376,65 @@ export default function KnowledgeMapPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-[#636573] font-medium py-4">
+              <p className="text-xs text-[#636573] font-medium py-3">
                 No recent study activity recorded yet.
               </p>
             )}
           </div>
 
           <NextLink
-            href="/"
+            href="/flashcards"
             className="neo-btn-outline w-full py-2 text-xs font-bold font-display flex items-center justify-center gap-2"
           >
-            <span>Explore More Lessons</span>
-            <ArrowRight className="w-3.5 h-3.5 text-[#111218]" />
+            <span>Practice In Flashcards</span>
           </NextLink>
         </div>
 
-        {/* Panel 3: Suggested Next Concept */}
-        <div className="bg-[#111218] text-white border-2 border-[#111218] rounded-3xl p-6 shadow-neo-lg space-y-4 flex flex-col justify-between">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-white/10">
-              <span className="badge-lime px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider">
-                Prerequisite Chain
+        {/* Panel 3: Recommended Next Step (Prerequisite Driven) */}
+        <div className="bg-[#FFFDF7] border-2 border-[#111218] rounded-3xl p-5 shadow-neo space-y-3.5 flex flex-col justify-between">
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between pb-2 border-b-2 border-[#111218]">
+              <span className="badge-black px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider bg-[#FFE353] text-[#111218]">
+                Suggested Next Step
               </span>
-              <span className="text-[10px] font-mono font-bold text-slate-300">
-                Suggested Next
+              <span className="text-[10px] font-mono font-bold text-[#636573]">
+                Knowledge Graph
               </span>
             </div>
 
             {data?.suggested_next ? (
-              <div className="space-y-3 pt-1">
-                <div>
-                  <span className="text-[10px] font-mono font-bold text-[#B8FF3D] uppercase">
-                    Target Concept
-                  </span>
-                  <h4 className="text-lg font-black font-display uppercase text-white">
+              <div className="space-y-2">
+                <div className="p-3 rounded-xl bg-[#F5F3EC] border-2 border-[#111218] space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono font-bold text-[#636573] uppercase">
+                      Recommended
+                    </span>
+                    <span className="text-[10px] font-bold text-[#111218]">
+                      {data.suggested_next.concept.category}
+                    </span>
+                  </div>
+                  <h4 className="text-sm font-black font-display uppercase text-[#111218]">
                     {data.suggested_next.concept.name}
                   </h4>
+                  <p className="text-[11px] text-[#636573] leading-snug">
+                    {data.suggested_next.reason}
+                  </p>
                 </div>
-
-                <p className="text-xs text-slate-300 font-medium leading-relaxed bg-[#21232C] p-3 rounded-xl border border-white/10">
-                  {data.suggested_next.reason}
-                </p>
               </div>
             ) : (
-              <div className="space-y-2 py-4">
-                <h4 className="text-sm font-black font-display uppercase text-white">
-                  Continue Exploring
-                </h4>
-                <p className="text-xs text-slate-300 font-medium leading-relaxed">
-                  Master existing concepts by completing checkpoint quizzes to unlock automated prerequisite recommendations.
-                </p>
-              </div>
+              <p className="text-xs text-[#636573] font-medium py-3">
+                Complete more lessons to unlock graph-based recommendations.
+              </p>
             )}
           </div>
 
-          {data?.suggested_next && (
-            <button
-              onClick={() => setSelectedNode(data.suggested_next?.concept || null)}
-              className="neo-btn-lime w-full py-2.5 text-xs font-bold font-display flex items-center justify-center gap-2"
-            >
-              <span>Inspect Concept In Graph</span>
-              <ArrowRight className="w-3.5 h-3.5 text-[#111218]" />
-            </button>
-          )}
+          <NextLink
+            href="/"
+            className="neo-btn-lime w-full py-2 text-xs font-bold font-display flex items-center justify-center gap-2"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-[#111218]" />
+            <span>Discover Lessons →</span>
+          </NextLink>
         </div>
       </div>
     </div>
