@@ -44,30 +44,33 @@ model Segment {
   quiz_questions   QuizQuestion[]
   attention_events AttentionEvent[]
   notes            SmartNote[]
+  concept_segments ConceptSegment[]
 
   @@index([video_id])
 }
 
 model QuizQuestion {
-  id             String   @id @default(cuid())
-  segment_id     String
-  segment        Segment  @relation(fields: [segment_id], references: [id], onDelete: Cascade)
-  question       String
-  options        String   // JSON string of array of string options: ["A", "B", "C", "D"]
-  correct_answer String
-  explanation    String?
+  id               String                @id @default(cuid())
+  segment_id       String
+  segment          Segment               @relation(fields: [segment_id], references: [id], onDelete: Cascade)
+  question         String
+  options          String                // JSON string of array of string options: ["A", "B", "C", "D"]
+  correct_answer   String
+  explanation      String?
+  concept_quizzes  ConceptQuizQuestion[]
 
   @@index([segment_id])
 }
 
 model Flashcard {
-  id         String   @id @default(cuid())
-  video_id   String
-  video      Video    @relation(fields: [video_id], references: [id], onDelete: Cascade)
-  front      String
-  back       String
-  mastered   Boolean  @default(false)
-  created_at DateTime @default(now())
+  id                String             @id @default(cuid())
+  video_id          String
+  video             Video              @relation(fields: [video_id], references: [id], onDelete: Cascade)
+  front             String
+  back              String
+  mastered          Boolean            @default(false)
+  created_at        DateTime           @default(now())
+  concept_flashcards ConceptFlashcard[]
 
   @@index([video_id])
 }
@@ -174,4 +177,102 @@ model SmartNote {
   @@index([video_id])
   @@index([segment_id])
   @@index([section_type])
+}
+
+// ─────────────────────────────────────────────────────────────
+// KNOWLEDGE GRAPH & CONCEPT MASTERY INTELLIGENCE LAYER
+// ─────────────────────────────────────────────────────────────
+
+model Concept {
+  id                 String                @id @default(cuid())
+  name               String                @unique
+  slug               String                @unique
+  description        String?
+  category           String?               // 'Machine Learning' | 'Computer Science' | 'Hardware' | 'Software Engineering' | 'Programming'
+  created_at         DateTime              @default(now())
+  updated_at         DateTime              @default(now())
+
+  outgoing_relations ConceptRelationship[] @relation("SourceConcept")
+  incoming_relations ConceptRelationship[] @relation("TargetConcept")
+
+  video_segments     ConceptSegment[]
+  flashcards         ConceptFlashcard[]
+  quiz_questions     ConceptQuizQuestion[]
+  user_mastery       UserConceptMastery[]
+
+  @@index([category])
+  @@index([name])
+}
+
+model ConceptRelationship {
+  id                String   @id @default(cuid())
+  source_concept_id String
+  source_concept    Concept  @relation("SourceConcept", fields: [source_concept_id], references: [id], onDelete: Cascade)
+  target_concept_id String
+  target_concept    Concept  @relation("TargetConcept", fields: [target_concept_id], references: [id], onDelete: Cascade)
+  relationship_type String   // 'prerequisite' | 'related' | 'part_of' | 'subtopic'
+  weight            Float    @default(1.0)
+  created_at        DateTime @default(now())
+
+  @@unique([source_concept_id, target_concept_id, relationship_type])
+  @@index([source_concept_id])
+  @@index([target_concept_id])
+}
+
+model ConceptSegment {
+  id                   String   @id @default(cuid())
+  concept_id           String
+  concept              Concept  @relation(fields: [concept_id], references: [id], onDelete: Cascade)
+  segment_id           String
+  segment              Segment  @relation(fields: [segment_id], references: [id], onDelete: Cascade)
+  source_start_seconds Int?
+  source_end_seconds   Int?
+  created_at           DateTime @default(now())
+
+  @@unique([concept_id, segment_id])
+  @@index([concept_id])
+  @@index([segment_id])
+}
+
+model ConceptFlashcard {
+  id           String    @id @default(cuid())
+  concept_id   String
+  concept      Concept   @relation(fields: [concept_id], references: [id], onDelete: Cascade)
+  flashcard_id String
+  flashcard    Flashcard @relation(fields: [flashcard_id], references: [id], onDelete: Cascade)
+
+  @@unique([concept_id, flashcard_id])
+  @@index([concept_id])
+  @@index([flashcard_id])
+}
+
+model ConceptQuizQuestion {
+  id               String       @id @default(cuid())
+  concept_id       String
+  concept          Concept      @relation(fields: [concept_id], references: [id], onDelete: Cascade)
+  quiz_question_id String
+  quiz_question    QuizQuestion @relation(fields: [quiz_question_id], references: [id], onDelete: Cascade)
+
+  @@unique([concept_id, quiz_question_id])
+  @@index([concept_id])
+  @@index([quiz_question_id])
+}
+
+model UserConceptMastery {
+  id             String   @id @default(cuid())
+  user_id        String   @default("default_user")
+  concept_id     String
+  concept        Concept  @relation(fields: [concept_id], references: [id], onDelete: Cascade)
+  mastery_score  Int      @default(0) // 0 - 100
+  correct_count  Int      @default(0)
+  wrong_count    Int      @default(0)
+  exposure_count Int      @default(0)
+  last_seen_at   DateTime @default(now())
+  created_at     DateTime @default(now())
+  updated_at     DateTime @default(now())
+
+  @@unique([user_id, concept_id])
+  @@index([user_id])
+  @@index([concept_id])
+  @@index([mastery_score])
 }

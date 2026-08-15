@@ -21,6 +21,7 @@ import {
   ListTodo,
   CheckCircle2,
   Workflow,
+  Network,
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
@@ -50,6 +51,7 @@ export default function RootLayout({
   const navItems = [
     { href: '/', label: 'Discover', icon: Compass },
     { href: '/#explore-section', label: 'Explore Lessons', icon: BookOpen },
+    { href: '/knowledge', label: 'Knowledge Map', icon: Network },
     { href: '/flashcards', label: 'Flashcards Studio', icon: Layers },
     { href: '/focus', label: 'Deep Focus', icon: Eye },
     { href: '/landing', label: 'AI Architecture', icon: Workflow },

@@ -1605,4 +1605,154 @@ Generate the structured Smart Notes JSON now:`;
   return fallbackNotes;
 }
 
+// ─────────────────────────────────────────────────────────────
+// KNOWLEDGE GRAPH INTELLIGENCE & MASTERY ENGINE
+// ─────────────────────────────────────────────────────────────
+
+export const MASTERY_THRESHOLDS = {
+  MASTERED: 80,
+  DEVELOPING: 50,
+  WEAK: 1,
+} as const;
+
+export type MasteryState = 'MASTERED' | 'DEVELOPING' | 'WEAK' | 'NOT_STUDIED';
+
+export function getMasteryState(score: number, exposureCount: number): MasteryState {
+  if (exposureCount === 0 || score === 0) return 'NOT_STUDIED';
+  if (score >= MASTERY_THRESHOLDS.MASTERED) return 'MASTERED';
+  if (score >= MASTERY_THRESHOLDS.DEVELOPING) return 'DEVELOPING';
+  return 'WEAK';
+}
+
+export interface ExtractedConcept {
+  name: string;
+  description: string;
+  category: string;
+  related_concepts: {
+    target_name: string;
+    relationship_type: 'prerequisite' | 'related' | 'part_of' | 'subtopic';
+  }[];
+  segment_order_indices: number[];
+}
+
+/**
+ * Extracts atomic concepts and semantic relationships for a video lecture.
+ */
+export async function extractConceptsAndRelationshipsForVideo(
+  videoTitle: string,
+  channel: string,
+  segments: { title: string; summary?: string | null; order_index: number }[],
+  transcriptSample?: string
+): Promise<ExtractedConcept[]> {
+  const groqKey = process.env.GROQ_API_KEY;
+
+  const segmentOutline = segments
+    .map((s, idx) => `Part ${idx + 1}: "${s.title}" - ${s.summary || 'Core concept'}`)
+    .join('\n');
+
+  const systemPrompt = `You are Saras AI's Knowledge Graph Architect.
+Your task is to extract 3 to 6 atomic, meaningful pedagogical CONCEPTS taught in this video, along with their conceptual relationships.
+
+RULES:
+1. GROUNDING: Extract ONLY concepts and technical terms explicitly explained in the video.
+2. CATEGORIES: Choose from: "Machine Learning", "Computer Science", "Hardware & Architecture", "Software Engineering", "Web Development", "Mathematics", "Productivity & Mindset".
+3. RELATIONSHIPS:
+   - "prerequisite": Concept A must be understood before Concept B.
+   - "part_of": Concept A is a component/part of Concept B.
+   - "subtopic": Concept A is a specialized subfield of Concept B.
+   - "related": Concepts A and B share mechanisms or principles.
+4. NO PLATFORM LEAKS: Do not mention Saras AI, Learnly, quiz gating, spaced repetition, or attention monitoring.
+
+OUTPUT JSON FORMAT (STRICT):
+{
+  "concepts": [
+    {
+      "name": "Concept Name",
+      "description": "Clear 1-sentence definition of this concept as taught in the video.",
+      "category": "Computer Science",
+      "related_concepts": [
+        {
+          "target_name": "Related Concept Name",
+          "relationship_type": "prerequisite" | "part_of" | "subtopic" | "related"
+        }
+      ],
+      "segment_order_indices": [0, 1]
+    }
+  ]
+}`;
+
+  const userPrompt = `VIDEO TITLE: "${videoTitle}"
+CHANNEL: "${channel}"
+CHAPTERS:
+${segmentOutline}
+
+TRANSCRIPT EXCERPT:
+${(transcriptSample || '').slice(0, 3000)}
+
+Extract the structured concepts JSON now:`;
+
+  if (groqKey) {
+    try {
+      console.log(`[GROQ] Extracting Knowledge Graph concepts for "${videoTitle}" (Llama 3.3 70B)...`);
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${groqKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+          response_format: { type: 'json_object' },
+          temperature: 0.2,
+          max_tokens: 2500,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const content = data.choices?.[0]?.message?.content;
+        if (content) {
+          const parsed = JSON.parse(content);
+          if (Array.isArray(parsed.concepts) && parsed.concepts.length > 0) {
+            console.log(`[GROQ] Extracted ${parsed.concepts.length} concepts for "${videoTitle}".`);
+            return parsed.concepts.map((c: any) => ({
+              name: String(c.name || '').trim(),
+              description: String(c.description || '').trim(),
+              category: String(c.category || 'Computer Science').trim(),
+              related_concepts: Array.isArray(c.related_concepts)
+                ? c.related_concepts.map((r: any) => ({
+                    target_name: String(r.target_name || '').trim(),
+                    relationship_type: ['prerequisite', 'related', 'part_of', 'subtopic'].includes(r.relationship_type)
+                      ? r.relationship_type
+                      : 'related',
+                  }))
+                : [],
+              segment_order_indices: Array.isArray(c.segment_order_indices)
+                ? c.segment_order_indices.filter((i: any) => typeof i === 'number')
+                : [0],
+            }));
+          }
+        }
+      }
+    } catch (e: any) {
+      console.warn('[GROQ] Concept extraction error:', e.message);
+    }
+  }
+
+  // Deterministic Fallback based on segments
+  console.log(`[KNOWLEDGE_GRAPH] Using deterministic fallback concepts for "${videoTitle}"`);
+  return segments.map((s, idx) => ({
+    name: s.title.split(/[:–-]/)[0].trim(),
+    description: s.summary || `Fundamental concepts, mechanisms, and rules of thumb covering ${s.title}.`,
+    category: 'Computer Science',
+    related_concepts: idx > 0 ? [{ target_name: segments[0].title.split(/[:–-]/)[0].trim(), relationship_type: 'subtopic' as const }] : [],
+    segment_order_indices: [s.order_index],
+  }));
+}
+
+
 

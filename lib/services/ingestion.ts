@@ -6,6 +6,7 @@ import {
   generateTranscriptGroundedFlashcards,
   validateAndFilterFlashcards,
   generateSmartNotesForVideo,
+  extractConceptsAndRelationshipsForVideo,
 } from './ai';
 
 export interface IngestOptions {
@@ -111,7 +112,21 @@ export async function ingestVideo(youtubeUrl: string, options: IngestOptions = {
       console.warn(`[AI] Smart Notes generation non-fatal error:`, e.message);
     }
 
-    // Step E: Persist everything to database in atomic transaction
+    // Step E: Run AI Knowledge Graph Concept Extraction
+    let extractedConcepts: any[] = [];
+    try {
+      extractedConcepts = await extractConceptsAndRelationshipsForVideo(
+        meta.title,
+        meta.channel,
+        aiResult.segments,
+        fullText
+      );
+      console.log(`[AI] Knowledge Graph concepts extracted: ${extractedConcepts.length} concepts`);
+    } catch (e: any) {
+      console.warn(`[AI] Concept extraction non-fatal error:`, e.message);
+    }
+
+    // Step F: Persist everything to database in atomic transaction
     const updatedVideo = await db.$transaction(async (tx) => {
       // Clear any prior partial segments/flashcards/notes if retrying failed video
       await tx.quizQuestion.deleteMany({
@@ -142,6 +157,8 @@ export async function ingestVideo(youtubeUrl: string, options: IngestOptions = {
 
       let totalQuizzesPersisted = 0;
       const createdSegments: any[] = [];
+      const createdQuizzes: any[] = [];
+      const createdFlashcards: any[] = [];
 
       // Insert Segments and Quizzes
       for (const seg of aiResult.segments) {
@@ -159,7 +176,7 @@ export async function ingestVideo(youtubeUrl: string, options: IngestOptions = {
 
         // Insert Quiz Questions for this segment
         for (const q of seg.quiz_questions) {
-          await tx.quizQuestion.create({
+          const createdQ = await tx.quizQuestion.create({
             data: {
               segment_id: createdSeg.id,
               question: q.question,
@@ -168,13 +185,14 @@ export async function ingestVideo(youtubeUrl: string, options: IngestOptions = {
               explanation: q.explanation,
             },
           });
+          createdQuizzes.push(createdQ);
           totalQuizzesPersisted++;
         }
       }
 
       // Insert Video-Grounded Flashcards
       for (const fc of aiResult.flashcards) {
-        await tx.flashcard.create({
+        const createdFc = await tx.flashcard.create({
           data: {
             video_id: savedVideo.id,
             front: fc.front,
@@ -182,6 +200,7 @@ export async function ingestVideo(youtubeUrl: string, options: IngestOptions = {
             mastered: false,
           },
         });
+        createdFlashcards.push(createdFc);
       }
 
       // Insert Smart Notes
@@ -206,7 +225,106 @@ export async function ingestVideo(youtubeUrl: string, options: IngestOptions = {
         });
       }
 
-      console.log(`[DB] persisted ${aiResult.segments.length} segments, ${totalQuizzesPersisted} quizzes, ${aiResult.flashcards.length} flashcards, ${smartNotes.length} smart notes`);
+      // Insert Concepts & Relationships
+      const conceptRecordMap = new Map<string, any>();
+      for (const ec of extractedConcepts) {
+        const slug = ec.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        const concept = await tx.concept.upsert({
+          where: { name: ec.name },
+          create: {
+            name: ec.name,
+            slug: `${slug}-${Math.random().toString(36).substring(2, 6)}`,
+            description: ec.description,
+            category: ec.category,
+          },
+          update: {
+            description: ec.description,
+            category: ec.category,
+          },
+        });
+        conceptRecordMap.set(ec.name.toLowerCase(), concept);
+
+        // Link to Segment
+        for (const orderIdx of ec.segment_order_indices) {
+          const seg = createdSegments[orderIdx] || createdSegments[0];
+          if (seg) {
+            await tx.conceptSegment.upsert({
+              where: {
+                concept_id_segment_id: {
+                  concept_id: concept.id,
+                  segment_id: seg.id,
+                },
+              },
+              create: {
+                concept_id: concept.id,
+                segment_id: seg.id,
+                source_start_seconds: seg.start_seconds,
+                source_end_seconds: seg.end_seconds,
+              },
+              update: {},
+            });
+          }
+        }
+
+        // Initialize User Mastery for this concept
+        await tx.userConceptMastery.upsert({
+          where: {
+            user_id_concept_id: {
+              user_id: userId,
+              concept_id: concept.id,
+            },
+          },
+          create: {
+            user_id: userId,
+            concept_id: concept.id,
+            mastery_score: 0,
+            exposure_count: 0,
+            correct_count: 0,
+            wrong_count: 0,
+            last_seen_at: new Date(),
+          },
+          update: {},
+        });
+      }
+
+      // Insert Concept Relationships
+      for (const ec of extractedConcepts) {
+        const sourceRecord = conceptRecordMap.get(ec.name.toLowerCase());
+        if (!sourceRecord) continue;
+
+        for (const rel of ec.related_concepts) {
+          const targetRecord =
+            conceptRecordMap.get(rel.target_name.toLowerCase()) ||
+            (await tx.concept.findFirst({
+              where: { name: { contains: rel.target_name } },
+            }));
+
+          if (targetRecord && targetRecord.id !== sourceRecord.id) {
+            try {
+              await tx.conceptRelationship.upsert({
+                where: {
+                  source_concept_id_target_concept_id_relationship_type: {
+                    source_concept_id: sourceRecord.id,
+                    target_concept_id: targetRecord.id,
+                    relationship_type: rel.relationship_type,
+                  },
+                },
+                create: {
+                  source_concept_id: sourceRecord.id,
+                  target_concept_id: targetRecord.id,
+                  relationship_type: rel.relationship_type,
+                  weight: 1.0,
+                },
+                update: {},
+              });
+            } catch (e: any) {
+              // Ignore duplicate
+            }
+          }
+        }
+      }
+
+      console.log(`[DB] persisted ${aiResult.segments.length} segments, ${totalQuizzesPersisted} quizzes, ${aiResult.flashcards.length} flashcards, ${smartNotes.length} notes, ${extractedConcepts.length} concepts`);
 
       // Initialize default user progress record
       await tx.userVideoProgress.upsert({
