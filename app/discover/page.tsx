@@ -444,12 +444,16 @@ export default function DiscoverHomePage() {
                 <button
                   type="submit"
                   disabled={isProcessing || !inputQuery.trim()}
-                  className="neo-btn-lime px-5 py-2.5 text-xs sm:text-sm flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+                  className={`px-5 py-2.5 text-xs sm:text-sm font-black font-display uppercase tracking-wider rounded-xl border-2 border-[#111218] transition-all flex items-center gap-1.5 flex-shrink-0 ${
+                    !inputQuery.trim() || isProcessing
+                      ? 'bg-slate-200 text-slate-400 opacity-50 cursor-not-allowed'
+                      : 'bg-[#B8FF3D] hover:bg-[#C6FF57] text-[#111218] shadow-neo hover:-translate-y-0.5 animate-pulse cursor-pointer'
+                  }`}
                 >
                   {isProcessing ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin text-[#111218]" />
-                      <span>Loading...</span>
+                      <span>Segmenting...</span>
                     </>
                   ) : (
                     <>
