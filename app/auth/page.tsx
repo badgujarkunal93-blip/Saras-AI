@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import NextLink from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
@@ -21,6 +21,7 @@ import {
   Check,
   AlertCircle,
   Compass,
+  RotateCw,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth/AuthContext';
 
@@ -39,7 +40,7 @@ const AVATAR_COLORS = [
   { hex: '#FFFDF7', label: 'Paper' },
 ];
 
-export default function AuthPage() {
+function AuthPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, login, signup, loginWithGoogle, quickLogin, demoUsers } = useAuth();
@@ -647,3 +648,21 @@ export default function AuthPage() {
     </div>
   );
 }
+
+export default function AuthPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#F5F3EC] flex items-center justify-center">
+          <div className="p-4 bg-[#FFFDF7] border-2 border-[#111218] rounded-2xl shadow-neo-sm font-display font-bold text-xs flex items-center gap-2">
+            <RotateCw className="w-4 h-4 animate-spin text-[#111218]" />
+            <span>Loading Authentication Studio...</span>
+          </div>
+        </div>
+      }
+    >
+      <AuthPageContent />
+    </Suspense>
+  );
+}
+
