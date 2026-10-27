@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { chatAssistantReply, ChatContext } from '@/lib/services/ai';
 import { ingestVideo } from '@/lib/services/ingestion';
+import { extractYouTubeId } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -105,12 +106,9 @@ export async function POST(req: NextRequest) {
     const trimmedMessage = message.trim();
 
     // Action 2: Direct YouTube URL pasted into chat input
-    const isYouTubeUrl =
-      trimmedMessage.includes('youtube.com/watch') ||
-      trimmedMessage.includes('youtu.be/') ||
-      trimmedMessage.includes('youtube.com/shorts');
+    const ytVideoId = extractYouTubeId(trimmedMessage);
 
-    if (isYouTubeUrl) {
+    if (ytVideoId) {
       // Record user's URL message
       await db.chatMessage.create({
         data: {

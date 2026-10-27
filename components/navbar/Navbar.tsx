@@ -18,10 +18,13 @@ import {
 } from 'lucide-react';
 import { UserLearningSummary } from '@/lib/services/userProfile';
 import { ProfileDropdown } from '@/components/profile/ProfileDropdown';
+import { useAuth } from '@/lib/auth/AuthContext';
+import { extractYouTubeId } from '@/lib/utils';
 
 export function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { user: authUser } = useAuth();
   const [urlInput, setUrlInput] = useState('');
   const [isIngesting, setIsIngesting] = useState(false);
   const [ingestStatus, setIngestStatus] = useState<{
@@ -35,7 +38,8 @@ export function Navbar() {
   const fetchSummary = async () => {
     try {
       const tzOffset = typeof window !== 'undefined' ? new Date().getTimezoneOffset() : 0;
-      const res = await fetch(`/api/user/summary?tzOffset=${tzOffset}`);
+      const uid = authUser?.id || 'default_user';
+      const res = await fetch(`/api/user/summary?userId=${encodeURIComponent(uid)}&tzOffset=${tzOffset}`);
       if (res.ok) {
         const data = await res.json();
         setSummary(data.summary);
@@ -47,20 +51,28 @@ export function Navbar() {
 
   useEffect(() => {
     fetchSummary();
-  }, [pathname]);
+  }, [pathname, authUser?.id]);
 
   const handleIngestSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!urlInput.trim()) return;
+    const raw = urlInput.trim();
+    if (!raw) return;
 
     setIsIngesting(true);
     setIngestStatus({ type: 'idle' });
 
     try {
+      const videoId = extractYouTubeId(raw);
+      const targetUrl = videoId ? `https://www.youtube.com/watch?v=${videoId}` : raw;
+
       const res = await fetch('/api/videos/ingest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ youtubeUrl: urlInput.trim(), source: 'manual' }),
+        body: JSON.stringify({
+          youtubeUrl: targetUrl,
+          source: 'manual',
+          userId: authUser?.id || 'default_user',
+        }),
       });
 
       const data = await res.json();
@@ -98,8 +110,9 @@ export function Navbar() {
   ];
 
   const streakDays = summary?.streak?.currentStreak || 0;
-  const userInitials = summary?.user?.initials || 'S';
-  const userName = summary?.user?.name || 'Student';
+  const userInitials = authUser?.initials || summary?.user?.initials || 'S';
+  const userName = authUser?.name || summary?.user?.name || 'Student';
+  const userBg = authUser?.avatarBg || '#B8FF3D';
 
   return (
     <header className="sticky top-0 z-40 w-full bg-[#F5F3EC] border-b-2 border-[#111218] transition-all">
@@ -211,13 +224,23 @@ export function Navbar() {
           </div>
 
           {/* Functional User Profile Avatar Button */}
-          <button
-            onClick={() => setIsProfileOpen(!isProfileOpen)}
-            className="w-9 h-9 rounded-2xl bg-[#B8FF3D] border-2 border-[#111218] shadow-neo-sm flex items-center justify-center text-[#111218] text-xs font-black font-display cursor-pointer hover:-translate-y-0.5 hover:shadow-neo transition-all"
-            title={`Logged in as ${userName}`}
-          >
-            {userInitials}
-          </button>
+          {authUser ? (
+            <button
+              onClick={() => setIsProfileOpen(!isProfileOpen)}
+              className="w-9 h-9 rounded-2xl border-2 border-[#111218] shadow-neo-sm flex items-center justify-center text-[#111218] text-xs font-black font-display cursor-pointer hover:-translate-y-0.5 hover:shadow-neo transition-all"
+              style={{ backgroundColor: userBg }}
+              title={`Logged in as ${userName}`}
+            >
+              {userInitials}
+            </button>
+          ) : (
+            <NextLink
+              href="/auth"
+              className="px-3 py-1.5 rounded-xl bg-[#B8FF3D] border-2 border-[#111218] shadow-neo-sm text-xs font-bold font-display uppercase tracking-wider text-[#111218] hover:shadow-neo hover:-translate-y-0.5 transition-all"
+            >
+              Sign In
+            </NextLink>
+          )}
 
           {/* Profile Menu Dropdown */}
           <ProfileDropdown

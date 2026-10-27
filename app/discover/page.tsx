@@ -37,7 +37,9 @@ import {
   QUICK_PRACTICE_DECKS,
   CuratedLesson,
 } from '@/lib/data/curatedLessons';
-import { formatTime } from '@/lib/utils';
+import { formatTime, extractYouTubeId } from '@/lib/utils';
+import { useAuth } from '@/lib/auth/AuthContext';
+
 
 export interface DBVideo {
   id: string;
@@ -197,6 +199,7 @@ function getVideoProgressInfo(v: DBVideo) {
 
 export default function DiscoverHomePage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [inputQuery, setInputQuery] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -214,7 +217,8 @@ export default function DiscoverHomePage() {
   // Fetch real database videos for current user
   const fetchDbVideos = async () => {
     try {
-      const res = await fetch('/api/videos');
+      const uid = user?.id || 'default_user';
+      const res = await fetch(`/api/videos?userId=${encodeURIComponent(uid)}`);
       if (res.ok) {
         const data = await res.json();
         setDbVideos(data.videos || []);
@@ -228,7 +232,7 @@ export default function DiscoverHomePage() {
 
   useEffect(() => {
     fetchDbVideos();
-  }, []);
+  }, [user?.id]);
 
   // ─────────────────────────────────────────────────────────────
   // DERIVED DATA: User Learning History & In-Progress Content
@@ -279,17 +283,23 @@ export default function DiscoverHomePage() {
     setErrorMessage(null);
 
     const trimmed = query.trim();
+    const detectedId = extractYouTubeId(trimmed);
 
-    // 1. If it looks like a YouTube link
-    if (trimmed.includes('youtube.com') || trimmed.includes('youtu.be')) {
+    // 1. If it matches any YouTube link, short, embed, or ID
+    if (detectedId) {
       try {
+        const targetUrl = trimmed.includes('http') ? trimmed : `https://www.youtube.com/watch?v=${detectedId}`;
         const res = await fetch('/api/videos/ingest', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ youtubeUrl: trimmed }),
+          body: JSON.stringify({
+            youtubeUrl: targetUrl,
+            source: 'manual',
+            userId: user?.id || 'default_user',
+          }),
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to generate lesson');
+        if (!res.ok) throw new Error(data.error || 'Failed to generate lesson breakdown');
 
         if (data.video?.id) {
           router.push(`/video/${data.video.id}`);
@@ -314,7 +324,11 @@ export default function DiscoverHomePage() {
         const res = await fetch('/api/videos/ingest', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ youtubeUrl: matchedLesson.url }),
+          body: JSON.stringify({
+            youtubeUrl: matchedLesson.url,
+            source: 'manual',
+            userId: user?.id || 'default_user',
+          }),
         });
         const data = await res.json();
         if (data.video?.id) {
@@ -346,7 +360,11 @@ export default function DiscoverHomePage() {
       const res = await fetch('/api/videos/ingest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ youtubeUrl: lesson.url }),
+        body: JSON.stringify({
+          youtubeUrl: lesson.url,
+          source: 'manual',
+          userId: user?.id || 'default_user',
+        }),
       });
       const data = await res.json();
       if (data.video?.id) {

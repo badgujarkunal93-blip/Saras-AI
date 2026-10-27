@@ -1,6 +1,8 @@
 import { TranscriptItem } from './transcript';
 import { CURATED_LESSONS } from '../data/curatedLessons';
 
+export const DEFAULT_GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
+
 export interface SegmentProposal {
   order_index: number;
   title: string;
@@ -300,7 +302,7 @@ CRITICAL INSTRUCTIONS:
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
+          model: DEFAULT_GROQ_MODEL,
           messages,
           temperature: 0.5,
           max_tokens: 1000,
@@ -493,7 +495,7 @@ Return JSON in this exact structure:
   ]
 }`;
 
-  console.log('[GROQ] sending chat.completions request to https://api.groq.com/openai/v1/chat/completions (llama-3.3-70b-versatile)');
+  console.log(`[GROQ] sending chat.completions request to https://api.groq.com/openai/v1/chat/completions (${DEFAULT_GROQ_MODEL})`);
 
   const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
@@ -502,7 +504,7 @@ Return JSON in this exact structure:
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'llama-3.3-70b-versatile',
+      model: DEFAULT_GROQ_MODEL,
       response_format: { type: 'json_object' },
       temperature: 0.2,
       messages: [
@@ -1206,7 +1208,7 @@ Generate the grounded project recommendation JSON now:`;
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
+          model: DEFAULT_GROQ_MODEL,
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },
@@ -1615,7 +1617,7 @@ Generate the structured Smart Notes JSON now:`;
 
   if (groqKey) {
     try {
-      console.log(`[GROQ] Generating Smart Notes for "${videoTitle}" (Llama 3.3 70B)...`);
+      console.log(`[GROQ] Generating Smart Notes for "${videoTitle}" (${DEFAULT_GROQ_MODEL})...`);
       const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -1623,7 +1625,7 @@ Generate the structured Smart Notes JSON now:`;
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
+          model: DEFAULT_GROQ_MODEL,
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },
@@ -1779,7 +1781,7 @@ Extract the structured concepts JSON now:`;
 
   if (groqKey) {
     try {
-      console.log(`[GROQ] Extracting Knowledge Graph concepts for "${videoTitle}" (Llama 3.3 70B)...`);
+      console.log(`[GROQ] Extracting Knowledge Graph concepts for "${videoTitle}" (${DEFAULT_GROQ_MODEL})...`);
       const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -1787,7 +1789,7 @@ Extract the structured concepts JSON now:`;
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
+          model: DEFAULT_GROQ_MODEL,
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },

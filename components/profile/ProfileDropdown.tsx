@@ -18,6 +18,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { UserLearningSummary } from '@/lib/services/userProfile';
+import { useAuth } from '@/lib/auth/AuthContext';
 
 interface ProfileDropdownProps {
   summary: UserLearningSummary | null;
@@ -34,6 +35,7 @@ export function ProfileDropdown({
 }: ProfileDropdownProps) {
   const router = useRouter();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { user: authUser, logout } = useAuth();
 
   // Close on outside click
   useEffect(() => {
@@ -55,10 +57,11 @@ export function ProfileDropdown({
 
   if (!isOpen) return null;
 
-  const user = summary?.user || {
-    name: 'Student',
-    email: 'student@saras.ai',
-    initials: 'S',
+  const user = {
+    name: authUser?.name || summary?.user?.name || 'Student',
+    email: authUser?.email || summary?.user?.email || 'student@saras.ai',
+    initials: authUser?.initials || summary?.user?.initials || 'S',
+    avatarBg: authUser?.avatarBg || '#B8FF3D',
   };
 
   const metrics = summary?.metrics || {
@@ -81,10 +84,10 @@ export function ProfileDropdown({
   const currentGoals = summary?.currentGoals || { total: 0, completed: 0, items: [] };
 
   const handleSignOut = () => {
-    if (confirm('Are you sure you want to sign out?')) {
-      // Clear session / reload to initial landing
-      router.push('/');
+    if (confirm('Are you sure you want to sign out of your local session?')) {
+      logout();
       onClose();
+      router.push('/auth');
     }
   };
 
@@ -96,7 +99,10 @@ export function ProfileDropdown({
       {/* Header: User Profile Info */}
       <div className="p-4 bg-[#111218] text-white flex items-center justify-between border-b-2 border-[#111218]">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-[#B8FF3D] border-2 border-white flex items-center justify-center text-[#111218] text-base font-black font-display shadow-neo-sm">
+          <div
+            className="w-11 h-11 rounded-2xl border-2 border-white flex items-center justify-center text-[#111218] text-base font-black font-display shadow-neo-sm"
+            style={{ backgroundColor: user.avatarBg }}
+          >
             {user.initials}
           </div>
           <div className="overflow-hidden">

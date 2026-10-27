@@ -25,6 +25,7 @@ import {
   RotateCw,
   GraduationCap,
 } from 'lucide-react';
+import { AuthProvider } from '@/lib/auth/AuthContext';
 import { usePathname } from 'next/navigation';
 
 export default function RootLayout({
@@ -37,7 +38,14 @@ export default function RootLayout({
   const [isTasksOpen, setIsTasksOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-  const isLanding = pathname === '/' || pathname === '/landing' || pathname === '/welcome';
+  const isLanding =
+    pathname === '/' ||
+    pathname === '/landing' ||
+    pathname === '/welcome' ||
+    pathname.startsWith('/auth') ||
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/signup') ||
+    pathname.startsWith('/flow-diagram');
 
   useEffect(() => {
     const handleOpenChat = () => setIsChatOpen(true);
@@ -72,8 +80,9 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body className="min-h-screen bg-[#F5F3EC] text-[#111218] antialiased flex flex-col relative selection:bg-[#B8FF3D] selection:text-[#111218]">
-        {/* Subtle Interactive Paper Dot Grid Background Layer */}
-        <InteractiveGridBackground />
+        <AuthProvider>
+          {/* Subtle Interactive Paper Dot Grid Background Layer */}
+          <InteractiveGridBackground />
 
         {isLanding ? (
           <main className="w-full flex-1 relative z-10">{children}</main>
@@ -196,6 +205,7 @@ export default function RootLayout({
         <TasksPanel isOpen={isTasksOpen} onClose={() => setIsTasksOpen(false)} />
           </>
         )}
+        </AuthProvider>
       </body>
     </html>
   );

@@ -217,6 +217,12 @@ export default function SarasLandingPage() {
           {/* App Entry CTA */}
           <div className="flex items-center gap-3">
             <NextLink
+              href="/auth"
+              className="px-3.5 py-2 text-xs font-bold font-display uppercase tracking-wider text-[#111218] bg-[#FFFDF7] hover:bg-[#F5F3EC] border-2 border-[#111218] rounded-xl shadow-neo-sm hover:shadow-neo hover:-translate-y-0.5 transition-all"
+            >
+              Sign In
+            </NextLink>
+            <NextLink
               href="/discover"
               className="neo-btn-primary px-4 py-2 text-xs font-bold font-display uppercase flex items-center gap-1.5 shadow-neo-sm"
             >
