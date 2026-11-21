@@ -112,7 +112,7 @@ export function VertexGdnaCourseSection({
                   Module 1
                 </span>
                 <span className="text-[11px] font-mono text-slate-300">
-                  Curriculum Playlist Module
+                  Specialization Course Module
                 </span>
               </div>
               <h3 className="text-lg sm:text-xl font-extrabold text-white font-display tracking-tight">
@@ -124,36 +124,24 @@ export function VertexGdnaCourseSection({
             </div>
 
             <div className="flex items-center gap-2.5 flex-shrink-0">
-              {/* External Playlist Link */}
-              <a
-                href={activeModule.playlistUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-[#21232C] hover:bg-[#323542] text-white border-2 border-[#FFFDF7]/30 hover:border-white px-3.5 py-2 rounded-xl text-xs font-bold font-display inline-flex items-center gap-2 transition-all shadow-neo-sm"
-              >
-                <PlaySquare className="w-3.5 h-3.5 text-red-500 fill-red-500" />
-                <span>YouTube Playlist</span>
-                <ExternalLink className="w-3 h-3 text-slate-400" />
-              </a>
-
               {/* Quick Start Module */}
               <button
                 onClick={() => handleStartVideo(videos[0].id)}
-                className="neo-btn-lime px-4 py-2 text-xs font-bold inline-flex items-center gap-1.5 shadow-neo-sm"
+                className="neo-btn-lime px-5 py-2.5 text-xs font-bold inline-flex items-center gap-2 shadow-neo-sm"
               >
-                <Play className="w-3.5 h-3.5 fill-[#111218]" />
-                <span>Start Module</span>
+                <Play className="w-4 h-4 fill-[#111218]" />
+                <span>Start Module (Chapter 1)</span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* Playlist Video Chapters Grid */}
+        {/* Course Video Chapters Grid */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-extrabold text-[#111218] font-display uppercase tracking-wider flex items-center gap-2">
               <Layers className="w-4 h-4 text-[#111218]" />
-              <span>Playlist Chapters ({videos.length}) — Pre-Ingested & Segmented</span>
+              <span>Course Chapters ({videos.length}) — Pre-Ingested & Segmented</span>
             </h4>
             <span className="text-[11px] font-mono font-bold text-[#636573]">
               Checkpoint Gating Active

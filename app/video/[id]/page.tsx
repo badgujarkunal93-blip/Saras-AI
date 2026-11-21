@@ -27,7 +27,7 @@ import {
 import NextLink from 'next/link';
 import { ProjectRoadmapView } from '@/components/projects/ProjectRoadmapView';
 import { SmartNotesView } from '@/components/notes/SmartNotesView';
-import { getVertexGdnaVideo } from '@/lib/data/vertexGdnaCourse';
+import { getVertexGdnaVideo, getAllVertexGdnaVideos } from '@/lib/data/vertexGdnaCourse';
 
 interface VideoDetail {
   id: string;
@@ -56,15 +56,50 @@ export default function VideoDetailPage() {
   const router = useRouter();
   const videoId = params.id as string;
 
-  const [video, setVideo] = useState<VideoDetail | null>(null);
-  const [loading, setLoading] = useState(true);
+  const initialCourseVideo = getVertexGdnaVideo(videoId);
+
+  const [video, setVideo] = useState<VideoDetail | null>(() => {
+    if (initialCourseVideo) {
+      return {
+        id: initialCourseVideo.id,
+        youtube_video_id: initialCourseVideo.youtube_video_id,
+        title: initialCourseVideo.title,
+        channel: initialCourseVideo.channel,
+        duration_seconds: initialCourseVideo.duration_seconds,
+        thumbnail_url: initialCourseVideo.thumbnail_url,
+        status: 'ready',
+        segments: initialCourseVideo.segments,
+        flashcards: [],
+        userProgress: {
+          current_segment_index: 0,
+          completed_segment_ids: '[]',
+        },
+      };
+    }
+    return null;
+  });
+  const [loading, setLoading] = useState(() => !initialCourseVideo);
   const [activeTab, setActiveTab] = useState<'segments' | 'notes' | 'flashcards' | 'quiz_bank' | 'projects'>('segments');
   const [newCardFront, setNewCardFront] = useState('');
   const [newCardBack, setNewCardBack] = useState('');
   const [isAddingCard, setIsAddingCard] = useState(false);
   const [revealedQuizIds, setRevealedQuizIds] = useState<Set<string>>(new Set());
 
-  const isVertexGdna = video ? !!getVertexGdnaVideo(video.youtube_video_id || video.id) : false;
+  const allCourseVideos = getAllVertexGdnaVideos();
+  const currentChapterIdx = allCourseVideos.findIndex(
+    (v) => v.id === videoId || v.youtube_video_id === videoId
+  );
+  const isVertexCourseVideo = currentChapterIdx !== -1;
+  const prevChapterVideo =
+    isVertexCourseVideo && currentChapterIdx > 0
+      ? allCourseVideos[currentChapterIdx - 1]
+      : null;
+  const nextChapterVideo =
+    isVertexCourseVideo && currentChapterIdx < allCourseVideos.length - 1
+      ? allCourseVideos[currentChapterIdx + 1]
+      : null;
+
+  const isVertexGdna = isVertexCourseVideo || (video ? !!getVertexGdnaVideo(video.youtube_video_id || video.id) : false);
 
   const toggleQuizReveal = (qId: string) => {
     setRevealedQuizIds((prev) => {
@@ -282,6 +317,51 @@ export default function VideoDetailPage() {
         </span>
       </div>
 
+      {/* Vertex GDNA Course Module Top Banner */}
+      {isVertexCourseVideo && (
+        <div className="bg-[#111218] text-white border-2 border-[#111218] rounded-2xl p-3.5 sm:p-4 shadow-neo flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <span className="badge-lime px-2 py-0.5 text-[10px] font-extrabold uppercase font-display">
+              Module 1
+            </span>
+            <div className="text-xs">
+              <span className="text-[#B8FF3D] font-mono font-bold">
+                Chapter {currentChapterIdx + 1} of {allCourseVideos.length}:{' '}
+              </span>
+              <span className="font-extrabold text-white font-display uppercase">
+                {video.title.split('|')[0].trim()}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-shrink-0">
+            {prevChapterVideo && (
+              <NextLink
+                href={`/video/${prevChapterVideo.id}`}
+                className="bg-[#21232C] hover:bg-[#323542] text-white border-2 border-[#FFFDF7]/30 hover:border-white px-3 py-1.5 rounded-xl text-xs font-bold font-display inline-flex items-center gap-1.5 transition-all shadow-neo-sm"
+              >
+                <ArrowLeft className="w-3.5 h-3.5 text-[#B8FF3D]" />
+                <span>Prev Chapter</span>
+              </NextLink>
+            )}
+
+            {nextChapterVideo ? (
+              <NextLink
+                href={`/video/${nextChapterVideo.id}`}
+                className="neo-btn-lime px-3 py-1.5 text-xs font-bold inline-flex items-center gap-1.5 shadow-neo-sm"
+              >
+                <span>Next Chapter ({nextChapterVideo.chapter_number})</span>
+                <ArrowRight className="w-3.5 h-3.5 text-[#111218]" />
+              </NextLink>
+            ) : (
+              <span className="bg-[#B8FF3D] text-[#111218] px-3 py-1.5 rounded-xl text-xs font-bold font-display inline-flex items-center gap-1.5 border-2 border-[#111218]">
+                <span>Course Completed 🎓</span>
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Lesson Title */}
       <div className="space-y-1">
         <span className="badge-lime px-2.5 py-0.5 text-[10px] font-extrabold uppercase font-display">
@@ -302,6 +382,24 @@ export default function VideoDetailPage() {
         segments={video.segments}
         initialSegmentIndex={video.userProgress?.current_segment_index || 0}
         initialCompletedSegmentIds={completedIds}
+        nextVideo={
+          nextChapterVideo
+            ? {
+                id: nextChapterVideo.id,
+                title: nextChapterVideo.title,
+                chapter_number: nextChapterVideo.chapter_number,
+              }
+            : null
+        }
+        prevVideo={
+          prevChapterVideo
+            ? {
+                id: prevChapterVideo.id,
+                title: prevChapterVideo.title,
+                chapter_number: prevChapterVideo.chapter_number,
+              }
+            : null
+        }
       />
 
       {/* Turn This Lesson Into A Hands-on Project Banner */}

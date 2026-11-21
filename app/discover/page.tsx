@@ -667,7 +667,7 @@ export default function DiscoverHomePage() {
       </section>
 
       {/* ─────────────────────────────────────────────────────────────
-          VERTEX GDNA COURSE: Pre-Ingested Playlist Module & Specialization
+          VERTEX GDNA COURSE: Pre-Ingested Specialization Curriculum
       ───────────────────────────────────────────────────────────── */}
       <VertexGdnaCourseSection
         onLaunchVideo={(videoId) => router.push(`/video/${videoId}`)}

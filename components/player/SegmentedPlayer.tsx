@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import NextLink from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Play,
   Pause,
@@ -20,6 +21,8 @@ import {
   AlertCircle,
   RotateCw,
   Check,
+  ArrowRight,
+  ArrowLeft,
 } from 'lucide-react';
 import { formatTime } from '@/lib/utils';
 import { QuizModal, QuizQuestionItem } from './QuizModal';
@@ -35,15 +38,23 @@ export interface SegmentItem {
   quiz_questions: QuizQuestionItem[];
 }
 
+export interface NextVideoInfo {
+  id: string;
+  title: string;
+  chapter_number: number;
+}
+
 interface SegmentedPlayerProps {
   videoId: string;
   youtubeVideoId: string;
   title: string;
   channel: string;
-  durationSeconds: number;
+  durationSeconds?: number;
   segments: SegmentItem[];
   initialSegmentIndex?: number;
   initialCompletedSegmentIds?: string[];
+  nextVideo?: NextVideoInfo | null;
+  prevVideo?: NextVideoInfo | null;
 }
 
 declare global {
@@ -62,7 +73,10 @@ export function SegmentedPlayer({
   segments,
   initialSegmentIndex = 0,
   initialCompletedSegmentIds = [],
+  nextVideo,
+  prevVideo,
 }: SegmentedPlayerProps) {
+  const router = useRouter();
   const [player, setPlayer] = useState<any>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -77,6 +91,8 @@ export function SegmentedPlayer({
   const [allCompleted, setAllCompleted] = useState(false);
   const [lockedNotice, setLockedNotice] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [autoAdvanceTimer, setAutoAdvanceTimer] = useState<number | null>(null);
+  const autoAdvanceIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<any>(null);
@@ -85,6 +101,43 @@ export function SegmentedPlayer({
   const lockedNoticeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const activeSegment = segments[currentSegmentIdx] || segments[0];
+
+  const cancelAutoAdvance = useCallback(() => {
+    if (autoAdvanceIntervalRef.current) {
+      clearInterval(autoAdvanceIntervalRef.current);
+      autoAdvanceIntervalRef.current = null;
+    }
+    setAutoAdvanceTimer(null);
+  }, []);
+
+  const startAutoAdvance = useCallback(() => {
+    if (!nextVideo) return;
+    setAutoAdvanceTimer(5);
+    if (autoAdvanceIntervalRef.current) clearInterval(autoAdvanceIntervalRef.current);
+
+    autoAdvanceIntervalRef.current = setInterval(() => {
+      setAutoAdvanceTimer((prev) => {
+        if (prev === null) return null;
+        if (prev <= 1) {
+          if (autoAdvanceIntervalRef.current) {
+            clearInterval(autoAdvanceIntervalRef.current);
+            autoAdvanceIntervalRef.current = null;
+          }
+          router.push(`/video/${nextVideo.id}`);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, [nextVideo, router]);
+
+  useEffect(() => {
+    return () => {
+      if (autoAdvanceIntervalRef.current) {
+        clearInterval(autoAdvanceIntervalRef.current);
+      }
+    };
+  }, []);
 
   // Helper to show locked notice
   const triggerLockedNotice = (msg: string) => {
@@ -151,6 +204,12 @@ export function SegmentedPlayer({
           },
           onStateChange: (event: any) => {
             setIsPlaying(event.data === 1);
+            if (event.data === 0) {
+              setAllCompleted(true);
+              if (nextVideo) {
+                startAutoAdvance();
+              }
+            }
           },
         },
       });
@@ -401,6 +460,9 @@ export function SegmentedPlayer({
     if (isLessonFinished) {
       setAllCompleted(true);
       if (playerRef.current) playerRef.current.pauseVideo();
+      if (nextVideo) {
+        startAutoAdvance();
+      }
     } else {
       setCurrentSegmentIdx(nextIndex);
       const nextSegment = segments[nextIndex];
@@ -474,29 +536,93 @@ export function SegmentedPlayer({
         {/* Lesson Finished Full Overlay */}
         {allCompleted && (
           <div className="absolute inset-0 z-30 bg-[#FFFDF7]/95 backdrop-blur-sm flex items-center justify-center p-6 text-center animate-in fade-in">
-            <div className="max-w-md space-y-4">
+            <div className="max-w-md w-full space-y-4">
               <div className="w-14 h-14 rounded-2xl bg-[#B8FF3D] border-2 border-[#111218] flex items-center justify-center mx-auto text-[#111218] shadow-neo-sm">
                 <Award className="w-8 h-8" />
               </div>
-              <h3 className="text-2xl font-extrabold text-[#111218] font-display uppercase">Lesson Completed! 🎓</h3>
-              <p className="text-xs text-[#636573] font-medium leading-relaxed">
-                You passed all {segments.length} checkpoints in this course. Your recall questions are now in your active study deck.
-              </p>
-              <div className="flex items-center justify-center gap-3 pt-2">
-                <NextLink
-                  href="/flashcards"
-                  className="neo-btn-lime px-5 py-2.5 text-xs font-bold"
-                >
-                  Review Flashcards →
-                </NextLink>
+              <div className="space-y-1">
+                <h3 className="text-2xl font-extrabold text-[#111218] font-display uppercase">
+                  Chapter Completed! 🎓
+                </h3>
+                <p className="text-xs text-[#636573] font-medium leading-relaxed">
+                  You successfully cleared all {segments.length} checkpoint quizzes for this chapter!
+                </p>
+              </div>
+
+              {nextVideo ? (
+                <div className="p-3.5 bg-[#E9DFFF] border-2 border-[#111218] rounded-2xl text-left space-y-2 shadow-neo-sm">
+                  <div className="flex items-center justify-between">
+                    <span className="badge-lime px-2 py-0.5 text-[9px] font-extrabold uppercase font-display">
+                      Up Next: Chapter {nextVideo.chapter_number}
+                    </span>
+                    {autoAdvanceTimer !== null && (
+                      <span className="text-[10px] font-mono font-bold text-[#111218] bg-white px-2 py-0.5 rounded border border-[#111218]">
+                        Auto-advance: {autoAdvanceTimer}s
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs font-bold text-[#111218] font-display line-clamp-1">
+                    {nextVideo.title}
+                  </p>
+                  {autoAdvanceTimer !== null && (
+                    <div className="w-full bg-white/70 border border-[#111218] rounded-full h-2 overflow-hidden">
+                      <div
+                        className="bg-[#B8FF3D] h-full transition-all duration-1000 ease-linear"
+                        style={{ width: `${(autoAdvanceTimer / 5) * 100}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="p-3 bg-[#DDF6BD] border-2 border-[#111218] rounded-xl text-center space-y-1">
+                  <span className="text-xs font-extrabold font-display uppercase text-[#111218]">
+                    🎉 Entire Module Completed!
+                  </span>
+                  <p className="text-[11px] text-[#21232C] font-medium">
+                    You have mastered all 10 chapters of this curriculum specialization!
+                  </p>
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                {nextVideo ? (
+                  <>
+                    <button
+                      onClick={() => {
+                        cancelAutoAdvance();
+                        router.push(`/video/${nextVideo.id}`);
+                      }}
+                      className="neo-btn-lime px-4 py-2 text-xs font-bold inline-flex items-center gap-1.5 shadow-neo-sm"
+                    >
+                      <span>Next Chapter Now</span>
+                      <ArrowRight className="w-3.5 h-3.5 text-[#111218]" />
+                    </button>
+                    {autoAdvanceTimer !== null && (
+                      <button
+                        onClick={cancelAutoAdvance}
+                        className="neo-btn-outline px-3 py-2 text-xs font-bold"
+                      >
+                        Cancel Auto
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <NextLink
+                    href="/course/vertex-gdna"
+                    className="neo-btn-lime px-4 py-2 text-xs font-bold"
+                  >
+                    Curriculum Overview →
+                  </NextLink>
+                )}
                 <button
                   onClick={() => {
+                    cancelAutoAdvance();
                     setAllCompleted(false);
                     handleSelectSegment(0);
                   }}
-                  className="neo-btn-outline px-4 py-2 text-xs font-bold"
+                  className="neo-btn-outline px-3 py-2 text-xs font-bold"
                 >
-                  Replay Lesson
+                  Replay Chapter
                 </button>
               </div>
             </div>
@@ -591,7 +717,7 @@ export function SegmentedPlayer({
                 <span>{formatTime(currentTime)}</span>
                 <span className="text-slate-400">/</span>
                 <span className="text-slate-300">
-                  {formatTime(activeSegment?.end_seconds || durationSeconds)}
+                  {formatTime(activeSegment?.end_seconds || durationSeconds || 0)}
                 </span>
                 <span className="badge-lime px-2 py-0.2 text-[9px] font-display ml-1">
                   Part {currentSegmentIdx + 1}
