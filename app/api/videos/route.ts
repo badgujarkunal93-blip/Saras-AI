@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { getAllVertexGdnaVideos } from '@/lib/data/vertexGdnaCourse';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,7 +31,31 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    return NextResponse.json({ videos });
+    // Seamless fallback for serverless deployments: ensure all Vertex GDNA course videos are present
+    const existingYtIds = new Set(videos.map((v) => v.youtube_video_id));
+    const allCourseVideos = getAllVertexGdnaVideos();
+    const missingCourseVideos = allCourseVideos
+      .filter((cv) => !existingYtIds.has(cv.youtube_video_id))
+      .map((cv) => ({
+        id: cv.id,
+        youtube_video_id: cv.youtube_video_id,
+        title: cv.title,
+        channel: cv.channel,
+        duration_seconds: cv.duration_seconds,
+        thumbnail_url: cv.thumbnail_url,
+        status: 'ready',
+        segments: cv.segments.map((s) => ({
+          id: s.id,
+          order_index: s.order_index,
+          title: s.title,
+          start_seconds: s.start_seconds,
+          end_seconds: s.end_seconds,
+        })),
+        flashcards: [],
+        progress: [],
+      }));
+
+    return NextResponse.json({ videos: [...videos, ...missingCourseVideos] });
   } catch (error: any) {
     console.error('[API /api/videos GET Error]:', error);
     return NextResponse.json({ error: error?.message || 'Failed to fetch videos' }, { status: 500 });

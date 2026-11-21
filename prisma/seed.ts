@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { getAllVertexGdnaVideos } from '../lib/data/vertexGdnaCourse';
 
 const prisma = new PrismaClient();
 
@@ -305,6 +306,43 @@ async function main() {
         '👋 Welcome to **Saras AI**! I am your AI learning companion. Tell me what subject you want to master (e.g. "Transformers in AI", "System Design", "Rust fundamentals"), or paste any YouTube URL to turn it into an interactive quiz-gated lesson!',
     },
   });
+
+  // Seed Vertex GDNA Course (3Blue1Brown Deep Learning Track)
+  const vertexVideos = getAllVertexGdnaVideos();
+  for (const v of vertexVideos) {
+    const exists = await prisma.video.findUnique({
+      where: { youtube_video_id: v.youtube_video_id },
+    });
+    if (!exists) {
+      await prisma.video.create({
+        data: {
+          youtube_video_id: v.youtube_video_id,
+          title: v.title,
+          channel: v.channel,
+          duration_seconds: v.duration_seconds,
+          thumbnail_url: v.thumbnail_url,
+          status: 'ready',
+          segments: {
+            create: v.segments.map((s) => ({
+              order_index: s.order_index,
+              title: s.title,
+              summary: s.summary,
+              start_seconds: s.start_seconds,
+              end_seconds: s.end_seconds,
+              quiz_questions: {
+                create: s.quiz_questions.map((q) => ({
+                  question: q.question,
+                  options: JSON.stringify(q.options),
+                  correct_answer: q.correct_answer,
+                  explanation: q.explanation,
+                })),
+              },
+            })),
+          },
+        },
+      });
+    }
+  }
 
   console.log('✅ Learnly database seeded successfully!');
 }

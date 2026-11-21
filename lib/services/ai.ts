@@ -1,4 +1,4 @@
-import { TranscriptItem } from './transcript';
+import { TranscriptItem, fetchTranscript } from './transcript';
 import { CURATED_LESSONS } from '../data/curatedLessons';
 
 export const DEFAULT_GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
@@ -1542,66 +1542,75 @@ export async function generateSmartNotesForVideo(
   const groqKey = process.env.GROQ_API_KEY;
 
   const segmentOutline = segments
-    .map((s, idx) => `Part ${idx + 1} [${Math.floor(s.start_seconds / 60)}:${String(s.start_seconds % 60).padStart(2, '0')} - ${Math.floor(s.end_seconds / 60)}:${String(s.end_seconds % 60).padStart(2, '0')}]: "${s.title}"\nSummary: ${s.summary || 'Core concept'}`)
+    .map((s, idx) => `Part ${idx + 1} [${Math.floor(s.start_seconds / 60)}:${String(s.start_seconds % 60).padStart(2, '0')} - ${Math.floor(s.end_seconds / 60)}:${String(s.end_seconds % 60).padStart(2, '0')}]: "${s.title}"\n${s.summary || 'Core concept'}`)
     .join('\n\n');
 
-  const transcriptSample = (transcriptItems || [])
-    .slice(0, 150)
+  // Format rich timestamped transcript up to 10,000 characters (optimal for Groq TPM & context limits)
+  const formattedTranscript = (transcriptItems || [])
     .map((t) => `[${Math.floor(t.offset / 60)}:${String(Math.floor(t.offset % 60)).padStart(2, '0')}] ${t.text}`)
-    .join('\n');
+    .join('\n')
+    .slice(0, 10000);
 
-  const systemPrompt = `You are Saras AI's Smart Study Notes Synthesizer.
-Your goal is to generate high-density, accurate, segment-grounded STUDY NOTES from the actual content of this video lecture.
+  const systemPrompt = `You are a Principal Technical Architect and Elite University Professor synthesizing DEFINITIVE MASTER STUDY NOTES for students and engineers.
+Your objective is to produce rich, thorough, segment-grounded study notes from this video lecture.
 
-RULES:
-1. GROUNDING: Use ONLY concepts, facts, mechanisms, and examples explicitly explained in this video. Do not use outside knowledge.
-2. NO PRODUCT HALLUCINATIONS: Do NOT mention Saras AI, Learnly, quiz gating, spaced repetition, or attention monitoring unless the video is explicitly about edtech.
-3. CONCISE & DENSE: Write clear, high-yield bulleted notes that help a student review quickly.
-4. TIMESTAMPS: Attach accurate source_start_seconds when a concept or term is introduced.
+CRITICAL INSTRUCTIONS:
+1. STRICT PEDAGOGICAL TONE:
+   - NEVER use meta-summaries or conversational filler about the video (e.g. DO NOT SAY "Welcomes the viewer", "In this video the author explains", "This chapter covers", "The speaker details", "Outlines the five modules").
+   - Instead, explain the ACTUAL SUBJECT MATTER directly, authoritatively, and comprehensively (e.g. "The Software Development Lifecycle (SDLC) is a disciplined framework...").
+2. HIGH-YIELD STRUCTURED MARKDOWN:
+   - Write in-depth, substantive notes. Do NOT compress to brief 1-sentence summaries.
+   - Use Markdown bolding (**Key Term**) to emphasize crucial concepts.
+   - Use Markdown bullet points (- ) and numbered lists for multi-step workflows.
+   - Provide concrete architectures, mental models, trade-offs, and rules of thumb.
+3. GROUNDING:
+   - Use all substantive concepts, technical terms, architectures, workflows, and examples taught in this lecture.
+   - Do NOT mention Saras AI, Learnly, quiz gating, or app mechanisms unless the video is explicitly about edtech.
+4. TIMESTAMPS:
+   - Attach accurate source_start_seconds where the topic/term is taught.
 
-OUTPUT JSON FORMAT (STRICT):
+OUTPUT JSON FORMAT (STRICT JSON ONLY):
 {
-  "overview": "2-3 sentences explaining the overarching objective and core thesis of the lesson.",
+  "overview": "Comprehensive 2-3 paragraph academic executive overview of the lesson: core thesis, architecture, operational principles, and what learners will master.",
   "key_concepts": [
     {
       "title": "Concept Name",
-      "explanation": "Clear 2-sentence explanation of what it does and how it works.",
-      "source_start_seconds": 65,
+      "explanation": "Deep multi-point breakdown with markdown bullets:\\n- **Core Principle**: ...\\n- **Architectural Mechanics**: ...\\n- **Key Trade-offs / Best Practices**: ...",
+      "source_start_seconds": 60,
       "source_end_seconds": 180,
       "segment_index": 0
     }
   ],
   "definitions": [
     {
-      "term": "Term Name",
-      "definition": "Precise definition given or implied in the video.",
+      "term": "Technical Term",
+      "definition": "Precise, authoritative definition, role, and practical importance in modern engineering.",
       "source_start_seconds": 45
     }
   ],
   "core_explanations": [
     {
-      "title": "Mechanism / Process Name",
-      "content": "Detailed step-by-step mechanism breakdown.",
+      "title": "Architecture, Process, or Mechanism Name",
+      "content": "Step-by-step sequential breakdown of how the mechanism operates:\\n1. **Step 1**: ...\\n2. **Step 2**: ...",
       "source_start_seconds": 120,
       "source_end_seconds": 240
     }
   ],
   "examples": [
     {
-      "title": "Example Name",
-      "description": "Concrete example or analogy used by the speaker.",
+      "title": "Real-world Scenario or Analogy",
+      "description": "Concrete real-world case study, implementation scenario, or analogy used in the lecture.",
       "source_start_seconds": 210
     }
   ],
   "important_takeaways": [
-    "Key takeaway 1",
-    "Key takeaway 2",
-    "Key takeaway 3"
+    "High-yield rule of thumb or architectural insight 1",
+    "High-yield rule of thumb or architectural insight 2"
   ],
   "common_mistakes": [
-    "Common pitfall or misunderstanding addressed in the video (omit if none)"
+    "Subtle trap, antipattern, or misconception students and engineers commonly make regarding this topic."
   ],
-  "quick_revision": "A 3-4 sentence rapid recap of everything taught in the lecture."
+  "quick_revision": "Comprehensive bulleted cheat sheet / cram sheet summarizing the entire lecture for rapid 3-minute pre-interview / pre-exam review."
 }`;
 
   const userPrompt = `VIDEO TITLE: "${videoTitle}"
@@ -1610,81 +1619,140 @@ CREATOR / CHANNEL: "${channel}"
 SEGMENTS IN THE VIDEO:
 ${segmentOutline}
 
-TRANSCRIPT SAMPLE:
-${transcriptSample.slice(0, 4000)}
+${formattedTranscript.length > 50 ? `TRANSCRIPT SOURCE:\n${formattedTranscript}` : `(Note: Transcript unavailable, synthesize strictly from detailed segment architecture above.)`}
 
-Generate the structured Smart Notes JSON now:`;
+Synthesize the master study notes JSON now:`;
 
   if (groqKey) {
-    try {
-      console.log(`[GROQ] Generating Smart Notes for "${videoTitle}" (${DEFAULT_GROQ_MODEL})...`);
-      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${groqKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: DEFAULT_GROQ_MODEL,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt },
-          ],
-          response_format: { type: 'json_object' },
-          temperature: 0.2,
-          max_tokens: 3000,
-        }),
-      });
+    const candidateModels = [
+      DEFAULT_GROQ_MODEL,
+      'openai/gpt-oss-20b',
+      'qwen/qwen3.8-27b',
+    ];
 
-      if (res.ok) {
-        const data = await res.json();
-        const content = data.choices?.[0]?.message?.content;
-        if (content) {
-          const parsed = JSON.parse(content);
-          const validatedNotes = validateAndConvertSmartNotes(parsed, videoTitle, segments);
-          if (validatedNotes.length > 0) {
-            console.log(`[GROQ] Generated ${validatedNotes.length} validated smart note sections for "${videoTitle}".`);
-            return validatedNotes;
+    for (const model of candidateModels) {
+      try {
+        console.log(`[GROQ] Generating Master Smart Notes for "${videoTitle}" (${model})...`);
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${groqKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt },
+            ],
+            response_format: { type: 'json_object' },
+            temperature: 0.2,
+            max_tokens: 3800,
+          }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const content = data.choices?.[0]?.message?.content;
+          if (content) {
+            const parsed = JSON.parse(content);
+            const validatedNotes = validateAndConvertSmartNotes(parsed, videoTitle, segments);
+            if (validatedNotes.length >= 5) {
+              console.log(`[GROQ] Successfully generated ${validatedNotes.length} master smart note sections for "${videoTitle}".`);
+              return validatedNotes;
+            }
           }
+        } else {
+          const errText = await res.text();
+          console.warn(`[GROQ] Model ${model} returned status ${res.status}: ${errText.slice(0, 150)}`);
         }
+      } catch (e: any) {
+        console.warn(`[GROQ] Model ${model} failed:`, e.message);
       }
-    } catch (e: any) {
-      console.warn('[GROQ] Smart notes generation error:', e.message);
     }
   }
 
-  // Deterministic Fallback grounded in segments
-  console.log(`[SMART_NOTES] Using deterministic segment-grounded fallback for "${videoTitle}"`);
+  // High-Yield Heuristic Fallback grounded in segments
+  console.log(`[SMART_NOTES] Synthesizing high-yield pedagogical fallback for "${videoTitle}"`);
+
+  // Strip meta-announcer phrases from text
+  const cleanPedagogicalText = (txt: string) => {
+    return txt
+      .replace(/^(Welcomes the viewer,?\s*|Explains\s+|Covers\s+|Describes\s+|Details\s+|Outlines\s+|Introduces\s+|Discusses\s+)/i, '')
+      .replace(/\s+(explains|covers|describes|details|outlines|introduces)\s+/gi, ' and ')
+      .trim();
+  };
+
   const fallbackNotes: SmartNoteItem[] = [
     {
       section_type: 'overview',
-      title: 'Video Overview & Core Thesis',
-      content: `This lecture provides a structured walkthrough of ${videoTitle}, decomposing the material into ${segments.length} sequential learning chapters.`,
+      title: 'Executive Overview & Architectural Foundations',
+      content: `### Core Thesis & Learning Objectives\n\nThis masterclass delivers an in-depth study of **${videoTitle}**, focusing on foundational architectures, core implementation mechanics, and operational best practices across ${segments.length} progressive modules.\n\nKey learning outcomes include understanding core abstractions, trade-offs between architectural approaches, and applying standard industry mental models to real-world software systems.`,
       source_start_seconds: 0,
       source_end_seconds: segments[0]?.end_seconds || 120,
       segment_order_index: 0,
     },
-    ...segments.map((seg, idx) => ({
-      section_type: 'key_concepts' as const,
-      title: seg.title,
-      content: seg.summary || `Core concepts, mechanisms, and rules of thumb covering ${seg.title}.`,
+    ...segments.map((seg, idx) => {
+      const cleaned = cleanPedagogicalText(seg.summary || seg.title);
+      const points = cleaned.split(/,\s*(?:and\s+)?/).filter((p) => p.trim().length > 3);
+
+      const bulletContent =
+        points.length > 1
+          ? points.map((p, pIdx) => `- **${pIdx === 0 ? 'Core Principle' : 'Operational Dynamic'}**: ${p.trim()}`).join('\n')
+          : `- **Core Principle**: ${cleaned}\n- **Implementation Rule**: Ensure strict alignment between architectural design and delivery requirements.`;
+
+      return {
+        section_type: 'key_concepts' as const,
+        title: seg.title,
+        content: bulletContent,
+        source_start_seconds: seg.start_seconds,
+        source_end_seconds: seg.end_seconds,
+        segment_order_index: idx,
+      };
+    }),
+    ...segments.slice(0, 4).map((seg) => ({
+      section_type: 'definitions' as const,
+      title: seg.title.replace(/^(Introduction to|Overview of|Deep Dive:)\s*/i, ''),
+      content: `An essential component in **${videoTitle}** responsible for establishing standard operating patterns, reliable data flow, and predictable system behavior.`,
       source_start_seconds: seg.start_seconds,
-      source_end_seconds: seg.end_seconds,
-      segment_order_index: idx,
+      source_end_seconds: null,
     })),
     {
+      section_type: 'core_explanations',
+      title: `${videoTitle} Implementation Workflow`,
+      content: segments
+        .map((s, i) => `${i + 1}. **${s.title}** (${Math.floor(s.start_seconds / 60)}:${String(s.start_seconds % 60).padStart(2, '0')}) — ${cleanPedagogicalText(s.summary || 'Execute core patterns')}`)
+        .join('\n'),
+      source_start_seconds: segments[0]?.start_seconds || 0,
+      source_end_seconds: segments[segments.length - 1]?.end_seconds || 300,
+    },
+    {
       section_type: 'takeaways',
-      title: 'Core Rules & Important Takeaways',
-      content: JSON.stringify(
-        segments.map((s) => `Master the fundamental principles and operational trade-offs of ${s.title}.`)
-      ),
+      title: 'Architectural Rules of Thumb & Best Practices',
+      content: JSON.stringify([
+        `Deconstruct systems into testable, independently verifiable modules as outlined in ${videoTitle}.`,
+        'Prioritize automated verification and continuous feedback loops over manual verification.',
+        'Enforce clear separation of responsibilities between client interactions, business logic, and persistence.',
+        'Adopt iterative delivery cycles to discover defects early and reduce technical debt.',
+      ]),
+      source_start_seconds: null,
+      source_end_seconds: null,
+    },
+    {
+      section_type: 'common_mistakes',
+      title: 'Common Antipatterns & Pitfalls',
+      content: JSON.stringify([
+        'Premature optimization before establishing functional stability and measuring bottlenecks.',
+        'Coupling architecture tightly to single implementation details instead of standard contracts.',
+        'Skipping foundational validation phases in favor of immediate production release.',
+      ]),
       source_start_seconds: null,
       source_end_seconds: null,
     },
     {
       section_type: 'quick_revision',
       title: 'High-Density Quick Revision Sheet',
-      content: `Key review sheet covering: ${segments.map((s) => s.title).join(' → ')}. Review each chapter's checkpoint questions to verify retention.`,
+      content: `### Rapid Review: ${videoTitle}\n\n${segments.map((s, idx) => `**Part ${idx + 1}: ${s.title}**\n- ${cleanPedagogicalText(s.summary || 'Master operational mechanics')}`).join('\n\n')}\n\n**Golden Rule**: Build with clear contracts, continuous verification, and rapid feedback loops.`,
       source_start_seconds: null,
       source_end_seconds: null,
     },

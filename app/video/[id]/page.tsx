@@ -27,6 +27,7 @@ import {
 import NextLink from 'next/link';
 import { ProjectRoadmapView } from '@/components/projects/ProjectRoadmapView';
 import { SmartNotesView } from '@/components/notes/SmartNotesView';
+import { getVertexGdnaVideo } from '@/lib/data/vertexGdnaCourse';
 
 interface VideoDetail {
   id: string;
@@ -62,6 +63,8 @@ export default function VideoDetailPage() {
   const [newCardBack, setNewCardBack] = useState('');
   const [isAddingCard, setIsAddingCard] = useState(false);
   const [revealedQuizIds, setRevealedQuizIds] = useState<Set<string>>(new Set());
+
+  const isVertexGdna = video ? !!getVertexGdnaVideo(video.youtube_video_id || video.id) : false;
 
   const toggleQuizReveal = (qId: string) => {
     setRevealedQuizIds((prev) => {
@@ -381,6 +384,24 @@ export default function VideoDetailPage() {
 
         {/* Tab Content 2: Flashcards */}
         {activeTab === 'flashcards' && (
+          isVertexGdna ? (
+            <div className="bg-[#FFFDF7] border-2 border-[#111218] rounded-2xl p-6 sm:p-8 text-center space-y-3 shadow-neo">
+              <div className="w-12 h-12 rounded-xl bg-[#B8FF3D] border-2 border-[#111218] flex items-center justify-center text-[#111218] mx-auto shadow-neo-sm">
+                <BookOpen className="w-6 h-6" />
+              </div>
+              <div className="space-y-1.5 max-w-lg mx-auto">
+                <span className="badge-lime px-2.5 py-0.5 text-[10px] font-extrabold uppercase font-display">
+                  Vertex GDNA Specialization
+                </span>
+                <h3 className="text-base font-extrabold text-[#111218] uppercase font-display">
+                  Interactive Video & Checkpoints Active
+                </h3>
+                <p className="text-xs text-[#636573] font-medium leading-relaxed">
+                  Active recall flashcards for this Vertex GDNA module will be activated in an upcoming milestone. Proceed through the video chapters to master concepts and clear each gated quiz!
+                </p>
+              </div>
+            </div>
+          ) : (
           <div className="space-y-5">
             {/* Quick Add Custom Card */}
             <form
@@ -474,6 +495,7 @@ export default function VideoDetailPage() {
               ))}
             </div>
           </div>
+          )
         )}
 
         {/* Tab Content 3: Checkpoint Review */}
@@ -585,9 +607,28 @@ export default function VideoDetailPage() {
 
         {/* Tab Content 2: Smart Notes */}
         {activeTab === 'notes' && (
-          <div className="pt-2">
-            <SmartNotesView videoId={video.id} videoTitle={video.title} />
-          </div>
+          isVertexGdna ? (
+            <div className="bg-[#FFFDF7] border-2 border-[#111218] rounded-2xl p-6 sm:p-8 text-center space-y-3 shadow-neo">
+              <div className="w-12 h-12 rounded-xl bg-[#B8FF3D] border-2 border-[#111218] flex items-center justify-center text-[#111218] mx-auto shadow-neo-sm">
+                <Sparkles className="w-6 h-6 text-[#111218]" />
+              </div>
+              <div className="space-y-1.5 max-w-lg mx-auto">
+                <span className="badge-lime px-2.5 py-0.5 text-[10px] font-extrabold uppercase font-display">
+                  Vertex GDNA Specialization
+                </span>
+                <h3 className="text-base font-extrabold text-[#111218] uppercase font-display">
+                  Curriculum Video Chapters Active
+                </h3>
+                <p className="text-xs text-[#636573] font-medium leading-relaxed">
+                  Synthesized Smart Notes for this Vertex GDNA module will be enabled in an upcoming release. Use the Chapters tab for structured summaries and proceed through the checkpoint quizzes!
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="pt-2">
+              <SmartNotesView videoId={video.id} videoTitle={video.title} />
+            </div>
+          )
         )}
 
         {/* Tab Content 4: Build Project Roadmap */}

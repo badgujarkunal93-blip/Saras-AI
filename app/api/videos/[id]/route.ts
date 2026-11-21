@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { getVertexGdnaVideo } from '@/lib/data/vertexGdnaCourse';
 
 export async function GET(
   req: NextRequest,
@@ -31,6 +32,28 @@ export async function GET(
     });
 
     if (!video) {
+      // Fallback to pre-ingested Vertex GDNA course video catalog if db record is missing in deployment
+      const courseVideo = getVertexGdnaVideo(videoId);
+      if (courseVideo) {
+        return NextResponse.json({
+          video: {
+            id: courseVideo.id,
+            youtube_video_id: courseVideo.youtube_video_id,
+            title: courseVideo.title,
+            channel: courseVideo.channel,
+            duration_seconds: courseVideo.duration_seconds,
+            thumbnail_url: courseVideo.thumbnail_url,
+            status: 'ready',
+            segments: courseVideo.segments,
+            flashcards: [],
+            notes: [],
+            userProgress: {
+              current_segment_index: 0,
+              completed_segment_ids: '[]',
+            },
+          },
+        });
+      }
       return NextResponse.json({ error: 'Video not found' }, { status: 404 });
     }
 

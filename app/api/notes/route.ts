@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { generateSmartNotesForVideo } from '@/lib/services/ai';
+import { fetchTranscript } from '@/lib/services/transcript';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,6 +9,7 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const videoId = searchParams.get('videoId');
+    const forceRefresh = searchParams.get('refresh') === 'true';
 
     if (!videoId) {
       return NextResponse.json({ error: 'videoId is required' }, { status: 400 });
@@ -42,18 +44,45 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Video not found' }, { status: 404 });
     }
 
-    // If notes already exist, return cached notes immediately
-    if (video.notes.length > 0) {
+    // Detect legacy low-quality fallback notes that need automatic upgrade
+    const isLegacyFallback =
+      video.notes.length > 0 &&
+      (video.notes.length <= 8 &&
+        video.notes.some(
+          (n) =>
+            n.content.includes('structured walkthrough of') ||
+            n.content.startsWith('Welcomes the viewer') ||
+            n.content.includes('decomposing the material into') ||
+            n.content.startsWith('Describes the two categories')
+        ));
+
+    // If valid high-yield notes already exist and no upgrade/refresh is needed, return cached notes
+    if (video.notes.length > 0 && !isLegacyFallback && !forceRefresh) {
       return NextResponse.json({ notes: video.notes });
     }
 
-    // On-demand generation path if notes were missing for an existing video
-    console.log(`[NOTES] Generating Smart Notes on-demand for video "${video.title}"...`);
+    // On-demand generation or automatic upgrade path
+    console.log(`[NOTES] Generating Master Smart Notes for video "${video.title}"...`);
+
+    let transcriptItems: any[] = [];
+    try {
+      const tData = await fetchTranscript(video.youtube_video_id);
+      transcriptItems = tData.items || [];
+    } catch (e: any) {
+      console.warn(`[NOTES] Transcript fetch non-fatal error (${video.youtube_video_id}):`, e.message);
+    }
+
     const generatedNotes = await generateSmartNotesForVideo(
       video.title,
       video.channel,
-      video.segments
+      video.segments,
+      transcriptItems
     );
+
+    // Atomic wipe of legacy/prior notes and save new rich notes
+    await db.smartNote.deleteMany({
+      where: { video_id: video.id },
+    });
 
     const savedNotes: any[] = [];
     for (let i = 0; i < generatedNotes.length; i++) {
@@ -89,6 +118,7 @@ export async function GET(req: NextRequest) {
       savedNotes.push(created);
     }
 
+    console.log(`[NOTES] Successfully saved ${savedNotes.length} Master Smart Notes for "${video.title}".`);
     return NextResponse.json({ notes: savedNotes });
   } catch (error: any) {
     console.error('[API /api/notes GET Error]:', error);
@@ -123,11 +153,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Video not found' }, { status: 404 });
     }
 
-    // Force regenerate
+    // Force regenerate with full transcript grounding
+    let transcriptItems: any[] = [];
+    try {
+      const tData = await fetchTranscript(video.youtube_video_id);
+      transcriptItems = tData.items || [];
+    } catch (e: any) {
+      console.warn(`[NOTES] Transcript fetch non-fatal error (${video.youtube_video_id}):`, e.message);
+    }
+
+    console.log(`[NOTES] Force regenerating Master Smart Notes for "${video.title}"...`);
     const generatedNotes = await generateSmartNotesForVideo(
       video.title,
       video.channel,
-      video.segments
+      video.segments,
+      transcriptItems
     );
 
     // Delete prior notes

@@ -1,6 +1,7 @@
 import { db } from '@/lib/db';
 import { extractYouTubeId, getYouTubeThumbnail } from '@/lib/utils';
 import { fetchTranscript, fetchYouTubeMetadata } from './transcript';
+import { getVertexGdnaVideo } from '@/lib/data/vertexGdnaCourse';
 import {
   generateSegmentsAndQuizzes,
   generateTranscriptGroundedFlashcards,
@@ -54,6 +55,93 @@ export async function ingestVideo(youtubeUrl: string, options: IngestOptions = {
       video: existingVideo,
       cached: true,
     };
+  }
+
+  // Pre-ingested Vertex GDNA course fast-path (Guaranteed instant response without re-scraping)
+  const courseVideo = getVertexGdnaVideo(videoId);
+  if (courseVideo && (!existingVideo || existingVideo.status !== 'ready')) {
+    console.log(`[INGEST] Pre-ingested Vertex GDNA course video fast-path for: ${videoId}`);
+    try {
+      const persisted = await db.video.upsert({
+        where: { youtube_video_id: videoId },
+        update: {
+          title: courseVideo.title,
+          channel: courseVideo.channel,
+          duration_seconds: courseVideo.duration_seconds,
+          thumbnail_url: courseVideo.thumbnail_url,
+          status: 'ready',
+        },
+        create: {
+          id: courseVideo.id,
+          youtube_video_id: courseVideo.youtube_video_id,
+          title: courseVideo.title,
+          channel: courseVideo.channel,
+          duration_seconds: courseVideo.duration_seconds,
+          thumbnail_url: courseVideo.thumbnail_url,
+          status: 'ready',
+        },
+        include: {
+          segments: {
+            orderBy: { order_index: 'asc' },
+            include: { quiz_questions: true },
+          },
+          flashcards: true,
+          notes: true,
+        },
+      });
+
+      if (persisted.segments.length === 0) {
+        for (const seg of courseVideo.segments) {
+          await db.segment.create({
+            data: {
+              video_id: persisted.id,
+              order_index: seg.order_index,
+              title: seg.title,
+              summary: seg.summary,
+              start_seconds: seg.start_seconds,
+              end_seconds: seg.end_seconds,
+              quiz_questions: {
+                create: seg.quiz_questions.map((q) => ({
+                  question: q.question,
+                  options: JSON.stringify(q.options),
+                  correct_answer: q.correct_answer,
+                  explanation: q.explanation,
+                })),
+              },
+            },
+          });
+        }
+      }
+
+      await ensureUserProgress(persisted.id, userId);
+
+      const refreshed = await db.video.findUnique({
+        where: { id: persisted.id },
+        include: {
+          segments: {
+            orderBy: { order_index: 'asc' },
+            include: { quiz_questions: true },
+          },
+          flashcards: true,
+          notes: true,
+        },
+      });
+
+      return {
+        video: refreshed || persisted,
+        cached: true,
+      };
+    } catch (e: any) {
+      console.warn('[INGEST] Non-fatal error persisting course video to database:', e?.message || e);
+      return {
+        video: {
+          ...courseVideo,
+          flashcards: [],
+          notes: [],
+        },
+        cached: true,
+      };
+    }
   }
 
   // Concurrent lock: currently being processed

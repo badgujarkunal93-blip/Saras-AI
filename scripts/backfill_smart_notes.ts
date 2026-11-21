@@ -1,8 +1,9 @@
 import { db } from '../lib/db';
 import { generateSmartNotesForVideo } from '../lib/services/ai';
+import { fetchTranscript } from '../lib/services/transcript';
 
 async function backfillSmartNotes() {
-  console.log('=== Saras AI Smart Notes Backfill Operation ===\n');
+  console.log('=== Saras AI Master Smart Notes Upgrade & Backfill ===\n');
 
   const readyVideos = await db.video.findMany({
     where: { status: 'ready' },
@@ -16,24 +17,51 @@ async function backfillSmartNotes() {
 
   console.log(`Found ${readyVideos.length} ready videos in database.`);
 
-  let backfilledCount = 0;
+  let upgradedCount = 0;
   let skippedCount = 0;
 
   for (const video of readyVideos) {
-    if (video.notes.length > 0) {
-      console.log(`[SKIP] "${video.title}" already has ${video.notes.length} Smart Notes.`);
+    const isLegacyFallback =
+      video.notes.length > 0 &&
+      (video.notes.length <= 8 &&
+        video.notes.some(
+          (n) =>
+            n.content.includes('structured walkthrough of') ||
+            n.content.startsWith('Welcomes the viewer') ||
+            n.content.includes('decomposing the material into') ||
+            n.content.startsWith('Describes the two categories')
+        ));
+
+    // If it already has rich notes (e.g. >= 9 non-fallback notes), skip unless it's legacy fallback
+    if (video.notes.length >= 9 && !isLegacyFallback) {
+      console.log(`[SKIP] "${video.title}" already has ${video.notes.length} comprehensive Smart Notes.`);
       skippedCount++;
       continue;
     }
 
-    console.log(`\n[GENERATING] Smart Notes for "${video.title}" (${video.segments.length} segments)...`);
+    console.log(`\n[UPGRADING] Master Smart Notes for "${video.title}" (${video.segments.length} segments)...`);
 
     try {
+      let transcriptItems: any[] = [];
+      try {
+        const tRes = await fetchTranscript(video.youtube_video_id);
+        transcriptItems = tRes.items || [];
+        console.log(`  └─ Loaded ${transcriptItems.length} transcript items for grounding.`);
+      } catch (err: any) {
+        console.warn(`  └─ Transcript fetch notice: ${err.message}`);
+      }
+
       const generatedNotes = await generateSmartNotesForVideo(
         video.title,
         video.channel,
-        video.segments
+        video.segments,
+        transcriptItems
       );
+
+      // Clean old notes
+      await db.smartNote.deleteMany({
+        where: { video_id: video.id },
+      });
 
       for (let i = 0; i < generatedNotes.length; i++) {
         const note = generatedNotes[i];
@@ -56,16 +84,16 @@ async function backfillSmartNotes() {
         });
       }
 
-      console.log(`✓ Saved ${generatedNotes.length} Smart Notes for "${video.title}"`);
-      backfilledCount++;
+      console.log(`✓ Upgraded & Saved ${generatedNotes.length} Master Smart Notes for "${video.title}"`);
+      upgradedCount++;
     } catch (err: any) {
-      console.error(`❌ Failed to backfill notes for "${video.title}":`, err.message);
+      console.error(`❌ Failed to upgrade notes for "${video.title}":`, err.message);
     }
   }
 
-  console.log(`\n=== Backfill Completed ===`);
-  console.log(`• Backfilled: ${backfilledCount} videos`);
-  console.log(`• Skipped (Already Present): ${skippedCount} videos`);
+  console.log(`\n=== Upgrade Operation Completed ===`);
+  console.log(`• Upgraded / Backfilled: ${upgradedCount} videos`);
+  console.log(`• Retained (Already High-Yield): ${skippedCount} videos`);
 }
 
 backfillSmartNotes()

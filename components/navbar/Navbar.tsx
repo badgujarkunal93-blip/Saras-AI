@@ -105,6 +105,7 @@ export function Navbar() {
 
   const navLinks = [
     { href: '/discover', label: 'Discover', icon: Compass },
+    { href: '/course/vertex-gdna', label: 'Vertex GDNA', icon: Sparkles },
     { href: '/flashcards', label: 'Flashcards', icon: Layers },
     { href: '/focus', label: 'Deep Focus', icon: Eye },
   ];

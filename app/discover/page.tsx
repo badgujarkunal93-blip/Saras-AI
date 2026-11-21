@@ -37,6 +37,7 @@ import {
   QUICK_PRACTICE_DECKS,
   CuratedLesson,
 } from '@/lib/data/curatedLessons';
+import { VertexGdnaCourseSection } from '@/components/course/VertexGdnaCourseSection';
 import { formatTime, extractYouTubeId } from '@/lib/utils';
 import { useAuth } from '@/lib/auth/AuthContext';
 
@@ -664,6 +665,16 @@ export default function DiscoverHomePage() {
           </div>
         </button>
       </section>
+
+      {/* ─────────────────────────────────────────────────────────────
+          VERTEX GDNA COURSE: Pre-Ingested Playlist Module & Specialization
+      ───────────────────────────────────────────────────────────── */}
+      <VertexGdnaCourseSection
+        onLaunchVideo={(videoId) => router.push(`/video/${videoId}`)}
+        completedVideoIds={userHistoryVideos
+          .filter((v) => getVideoProgressInfo(v).isCompleted)
+          .map((v) => v.youtube_video_id)}
+      />
 
       {/* ─────────────────────────────────────────────────────────────
           3. CONTINUE LEARNING (Videos with unfinished progress)
