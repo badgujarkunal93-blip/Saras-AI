@@ -80,18 +80,62 @@ export default function VideoDetailPage() {
       const res = await fetch(`/api/videos/${videoId}`);
       if (res.ok) {
         const data = await res.json();
-        setVideo(data.video);
-      } else {
-        setVideo(null);
+        if (data?.video) {
+          setVideo(data.video);
+          setLoading(false);
+          return;
+        }
       }
     } catch (e) {
-      console.error('Failed to load video:', e);
-    } finally {
-      setLoading(false);
+      console.warn('Network fetch video error:', e);
     }
+
+    // Client-side instant fallback for Vertex GDNA course videos
+    const fallbackCourseVideo = getVertexGdnaVideo(videoId);
+    if (fallbackCourseVideo) {
+      setVideo({
+        id: fallbackCourseVideo.id,
+        youtube_video_id: fallbackCourseVideo.youtube_video_id,
+        title: fallbackCourseVideo.title,
+        channel: fallbackCourseVideo.channel,
+        duration_seconds: fallbackCourseVideo.duration_seconds,
+        thumbnail_url: fallbackCourseVideo.thumbnail_url,
+        status: 'ready',
+        segments: fallbackCourseVideo.segments,
+        flashcards: [],
+        userProgress: {
+          current_segment_index: 0,
+          completed_segment_ids: '[]',
+        },
+      });
+    } else {
+      setVideo(null);
+    }
+    setLoading(false);
   };
 
   useEffect(() => {
+    // Instant render for pre-ingested Vertex GDNA course videos on first paint
+    const instantVideo = getVertexGdnaVideo(videoId);
+    if (instantVideo) {
+      setVideo({
+        id: instantVideo.id,
+        youtube_video_id: instantVideo.youtube_video_id,
+        title: instantVideo.title,
+        channel: instantVideo.channel,
+        duration_seconds: instantVideo.duration_seconds,
+        thumbnail_url: instantVideo.thumbnail_url,
+        status: 'ready',
+        segments: instantVideo.segments,
+        flashcards: [],
+        userProgress: {
+          current_segment_index: 0,
+          completed_segment_ids: '[]',
+        },
+      });
+      setLoading(false);
+    }
+
     if (videoId) fetchVideo();
   }, [videoId]);
 

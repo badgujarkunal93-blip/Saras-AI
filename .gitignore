@@ -35,12 +35,11 @@ yarn-error.log*
 .env.production.local
 
 # SQLite / Local Database files
-prisma/*.db
 prisma/*.db-journal
 *.sqlite
 *.sqlite3
-*.db
 *.db-journal
+!prisma/dev.db
 
 # Vercel
 .vercel

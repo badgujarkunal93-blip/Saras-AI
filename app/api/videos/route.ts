@@ -9,27 +9,32 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const userId = searchParams.get('userId') || 'default_user';
 
-    const videos = await db.video.findMany({
-      orderBy: { created_at: 'desc' },
-      include: {
-        segments: {
-          orderBy: { order_index: 'asc' },
-          select: {
-            id: true,
-            order_index: true,
-            title: true,
-            start_seconds: true,
-            end_seconds: true,
+    let videos: any[] = [];
+    try {
+      videos = await db.video.findMany({
+        orderBy: { created_at: 'desc' },
+        include: {
+          segments: {
+            orderBy: { order_index: 'asc' },
+            select: {
+              id: true,
+              order_index: true,
+              title: true,
+              start_seconds: true,
+              end_seconds: true,
+            },
+          },
+          flashcards: {
+            select: { id: true, mastered: true },
+          },
+          progress: {
+            where: { user_id: userId },
           },
         },
-        flashcards: {
-          select: { id: true, mastered: true },
-        },
-        progress: {
-          where: { user_id: userId },
-        },
-      },
-    });
+      });
+    } catch (dbErr: any) {
+      console.warn('[API /api/videos] Database query error (serverless fallback active):', dbErr?.message);
+    }
 
     // Seamless fallback for serverless deployments: ensure all Vertex GDNA course videos are present
     const existingYtIds = new Set(videos.map((v) => v.youtube_video_id));

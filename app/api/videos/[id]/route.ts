@@ -11,56 +11,64 @@ export async function GET(
     const userId = searchParams.get('userId') || 'default_user';
     const videoId = params.id;
 
-    const video = await db.video.findFirst({
-      where: {
-        OR: [{ id: videoId }, { youtube_video_id: videoId }],
-      },
-      include: {
-        segments: {
-          orderBy: { order_index: 'asc' },
-          include: {
-            quiz_questions: true,
+    // 1. Fast-path: Check pre-ingested Vertex GDNA course video catalog first
+    // This guarantees 100% availability on serverless platforms (e.g. Vercel) with zero latency
+    const courseVideo = getVertexGdnaVideo(videoId);
+    if (courseVideo) {
+      return NextResponse.json({
+        video: {
+          id: courseVideo.id,
+          youtube_video_id: courseVideo.youtube_video_id,
+          title: courseVideo.title,
+          channel: courseVideo.channel,
+          duration_seconds: courseVideo.duration_seconds,
+          thumbnail_url: courseVideo.thumbnail_url,
+          status: 'ready',
+          segments: courseVideo.segments,
+          flashcards: [],
+          notes: [],
+          userProgress: {
+            current_segment_index: 0,
+            completed_segment_ids: '[]',
           },
         },
-        flashcards: {
-          orderBy: { created_at: 'asc' },
-        },
-        progress: {
-          where: { user_id: userId },
-        },
-      },
-    });
+      });
+    }
 
-    if (!video) {
-      // Fallback to pre-ingested Vertex GDNA course video catalog if db record is missing in deployment
-      const courseVideo = getVertexGdnaVideo(videoId);
-      if (courseVideo) {
-        return NextResponse.json({
-          video: {
-            id: courseVideo.id,
-            youtube_video_id: courseVideo.youtube_video_id,
-            title: courseVideo.title,
-            channel: courseVideo.channel,
-            duration_seconds: courseVideo.duration_seconds,
-            thumbnail_url: courseVideo.thumbnail_url,
-            status: 'ready',
-            segments: courseVideo.segments,
-            flashcards: [],
-            notes: [],
-            userProgress: {
-              current_segment_index: 0,
-              completed_segment_ids: '[]',
+    // 2. Query database with safe error boundary (in case of ephemeral serverless filesystem)
+    let video: any = null;
+    try {
+      video = await db.video.findFirst({
+        where: {
+          OR: [{ id: videoId }, { youtube_video_id: videoId }],
+        },
+        include: {
+          segments: {
+            orderBy: { order_index: 'asc' },
+            include: {
+              quiz_questions: true,
             },
           },
-        });
-      }
+          flashcards: {
+            orderBy: { created_at: 'asc' },
+          },
+          progress: {
+            where: { user_id: userId },
+          },
+        },
+      });
+    } catch (dbErr: any) {
+      console.warn('[API /api/videos/[id]] Database query warning:', dbErr?.message);
+    }
+
+    if (!video) {
       return NextResponse.json({ error: 'Video not found' }, { status: 404 });
     }
 
     // Parse options JSON strings in quiz_questions
-    const formattedSegments = video.segments.map((seg) => ({
+    const formattedSegments = video.segments.map((seg: any) => ({
       ...seg,
-      quiz_questions: seg.quiz_questions.map((q) => ({
+      quiz_questions: seg.quiz_questions.map((q: any) => ({
         ...q,
         options: typeof q.options === 'string' ? JSON.parse(q.options) : q.options,
       })),
@@ -70,7 +78,7 @@ export async function GET(
       video: {
         ...video,
         segments: formattedSegments,
-        userProgress: video.progress[0] || {
+        userProgress: video.progress?.[0] || {
           current_segment_index: 0,
           completed_segment_ids: '[]',
         },
